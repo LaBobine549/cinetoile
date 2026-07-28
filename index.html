@@ -1,0 +1,2957 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cinétoile — Devinez le film</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0b0316;
+    --bg-deep: #05010c;
+    --card: #140a28;
+    --card-edge: #2a1750;
+    --pink: #ff2e9a;
+    --cyan: #00f0ff;
+    --purple: #b026ff;
+    --yellow: #f9f002;
+    --text: #f1eeff;
+    --muted: #8b7fc0;
+    --green: #39ff88;
+    --wrong: #ff3860;
+    --radius: 6px;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html,body{
+    margin:0;
+    min-height:100%;
+    background:
+      repeating-linear-gradient(0deg, rgba(176,38,255,.07) 0 1px, transparent 1px 42px),
+      repeating-linear-gradient(90deg, rgba(0,240,255,.05) 0 1px, transparent 1px 42px),
+      radial-gradient(ellipse at 50% 0%, #23103f 0%, var(--bg) 55%, var(--bg-deep) 100%);
+    background-attachment: fixed;
+    animation: bg-drift 30s linear infinite, bg-glow 9s ease-in-out infinite;
+    color: var(--text);
+    font-family: 'VT323', monospace;
+    font-size: 1.2rem;
+  }
+
+  @keyframes bg-drift{
+    0%{ background-position: 0 0, 0 0, 0 0; }
+    100%{ background-position: 0 420px, 420px 0, 0 0; }
+  }
+  @keyframes bg-glow{
+    0%, 100%{ filter: brightness(1) saturate(1); }
+    50%{ filter: brightness(1.06) saturate(1.15); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    html,body{ animation: none; }
+  }
+
+  body{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding: 32px 16px 64px;
+    position: relative;
+    overflow-x: hidden;
+    width: 100%;
+  }
+
+  /* CRT scanline overlay */
+  body::after{
+    content:"";
+    position: fixed;
+    inset: 0;
+    pointer-events:none;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,.18) 0px,
+      rgba(0,0,0,.18) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    mix-blend-mode: multiply;
+    z-index: 50;
+  }
+
+  /* ---------- Header ---------- */
+  .tv-overlay{
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: #000;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity .6s ease;
+  }
+  .tv-overlay.tv-done{ display: none; }
+  .tv-overlay.tv-off{ opacity: 0; }
+
+  .tv-line{
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: rgba(190, 220, 230, .55);
+    box-shadow: 0 0 10px rgba(190,220,230,.3);
+    transform: translate(-50%, -50%);
+    transition: width .35s ease-out;
+    opacity: 0;
+  }
+  .tv-overlay.tv-line-on .tv-line{
+    width: 100%;
+    animation: tv-flicker .48s steps(1,end) 2;
+  }
+  .tv-overlay.tv-expand .tv-line{
+    width: 100%;
+    height: 100vh;
+    opacity: .35;
+    transition: height .6s ease, opacity .6s ease;
+  }
+  @keyframes tv-flicker{
+    0%{ opacity: 0; }
+    22%{ opacity: .6; }
+    38%{ opacity: .15; }
+    58%{ opacity: .7; }
+    75%{ opacity: .25; }
+    100%{ opacity: .5; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .tv-overlay{ display: none; }
+  }
+
+  .marquee{
+    text-align:center;
+    margin-bottom: 14px;
+    position:relative;
+  }
+
+  .marquee-frame{
+    display:inline-block;
+    position:relative;
+    padding: 20px 40px;
+    border: 3px solid var(--cyan);
+    border-radius: var(--radius);
+    background: #0e0620;
+    box-shadow:
+      0 0 6px var(--cyan),
+      0 0 18px rgba(0,240,255,.5),
+      6px 6px 0 var(--pink);
+    max-width: 100%;
+  }
+
+  @media (max-width: 420px){
+    .marquee-frame{ padding: 16px 18px; }
+  }
+
+  h1.title{
+    font-family:'Press Start 2P', monospace;
+    font-size: clamp(1.4rem, 5.5vw, 2.4rem);
+    letter-spacing: normal;
+    text-transform: uppercase;
+    margin:0;
+    color: var(--text);
+    text-shadow:
+      0 0 6px var(--pink),
+      0 0 14px var(--pink),
+      0 0 26px var(--purple);
+  }
+
+  @media (prefers-reduced-motion: no-preference){
+    h1.title{ animation: flicker 5s infinite; }
+  }
+  @keyframes flicker{
+    0%,19%,21%,23%,54%,56%,100%{ opacity:1; }
+    20%,22%,55%{ opacity:.72; }
+  }
+
+  .subtitle{
+    margin-top: 12px;
+    font-size: 1.05rem;
+    color: var(--cyan);
+    letter-spacing: .03em;
+  }
+
+  .editor-toggle-row{
+    margin-bottom: 24px;
+  }
+
+  .ghost-btn{
+    font-family:'Press Start 2P', monospace;
+    font-size: 0.62rem;
+    letter-spacing: .02em;
+    background: #140a28;
+    color: var(--yellow);
+    border: 2px solid var(--yellow);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    cursor:pointer;
+    box-shadow: 3px 3px 0 rgba(249,240,2,.35);
+    transition: transform .1s ease, box-shadow .1s ease;
+  }
+  .ghost-btn:hover{ transform: translate(-1px,-1px); box-shadow: 4px 4px 0 rgba(249,240,2,.5); }
+  .ghost-btn:active{ transform: translate(1px,1px); box-shadow: 1px 1px 0 rgba(249,240,2,.5); }
+  .ghost-btn:focus-visible{ outline: 2px solid var(--cyan); outline-offset: 2px; }
+  .ghost-btn:disabled{ opacity:.35; cursor:default; box-shadow:none; transform:none; }
+  .ghost-btn.playing{
+    color: var(--green);
+    border-color: var(--green);
+    box-shadow: 3px 3px 0 rgba(57,255,136,.35);
+  }
+
+  .toolbar-row{
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .rules-screen{
+    width: 100%;
+    max-width: 560px;
+    margin-bottom: 22px;
+  }
+  .rules-text{
+    color: var(--text);
+    font-size: 1.1rem;
+    line-height: 1.5;
+    margin: 4px 0 0;
+    text-align: left;
+  }
+
+  .start-screen{
+    width: 100%;
+    max-width: 560px;
+    margin-bottom: 26px;
+  }
+  .admin-gate{
+    width: 100%;
+    max-width: 560px;
+    margin-bottom: 26px;
+  }
+  .start-ticket{ text-align: center; }
+  .start-ticket .hint{
+    color: var(--muted);
+    font-size: 1.1rem;
+    margin: 4px 0 20px;
+  }
+  .start-ticket .answer-form{ justify-content: center; }
+  .pseudo-note{
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin: 14px 0 0;
+    line-height: 1.4;
+  }
+  .pseudo-note strong{ color: var(--yellow); }
+
+  .level-list{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .level-btn{
+    font-family: 'VT323', monospace;
+    font-size: 1.4rem;
+    letter-spacing: .01em;
+    background: #0e0620;
+    color: var(--cyan);
+    border: 2px solid var(--cyan);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    cursor: pointer;
+    box-shadow: 3px 3px 0 rgba(0,240,255,.3);
+    transition: transform .08s ease, box-shadow .08s ease;
+    position: relative;
+    overflow: visible;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .level-btn:hover{ transform: translate(-1px,-1px); box-shadow: 4px 4px 0 rgba(0,240,255,.45); }
+  .level-btn:focus-visible{ outline: 2px solid var(--yellow); outline-offset: 2px; }
+  .level-thumb{
+    width: 34px;
+    height: 34px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 2px solid var(--card-edge);
+    flex-shrink: 0;
+  }
+
+  /* --- Animations de clic (une par niveau, au choix de l'admin) --- */
+  .level-anim-pulse{ animation: level-pulse .3s ease; }
+  @keyframes level-pulse{
+    0%{ transform: scale(1); }
+    50%{ transform: scale(.94); background: rgba(0,240,255,.15); }
+    100%{ transform: scale(1); }
+  }
+
+  .level-anim-spin{ animation: level-spin .5s ease; }
+  @keyframes level-spin{
+    0%{ transform: scale(1) rotate(0deg); }
+    50%{ transform: scale(.85) rotate(180deg); }
+    100%{ transform: scale(1) rotate(360deg); }
+  }
+
+  .level-anim-glitch{ animation: level-glitch .35s steps(2,end); }
+  @keyframes level-glitch{
+    0%{ transform: translate(0); text-shadow: none; }
+    20%{ transform: translate(-3px,2px); text-shadow: 2px 0 var(--pink), -2px 0 var(--cyan); }
+    40%{ transform: translate(3px,-2px); text-shadow: -2px 0 var(--pink), 2px 0 var(--cyan); }
+    60%{ transform: translate(-2px,1px); text-shadow: 2px 0 var(--cyan), -2px 0 var(--pink); }
+    80%{ transform: translate(2px,-1px); text-shadow: none; }
+    100%{ transform: translate(0); }
+  }
+
+  .level-anim-wave::after{
+    content:"";
+    position: absolute;
+    inset: 0;
+    border: 2px solid var(--cyan);
+    border-radius: var(--radius);
+    animation: level-wave .5s ease-out;
+    pointer-events: none;
+  }
+  @keyframes level-wave{
+    0%{ transform: scale(1); opacity: 1; }
+    100%{ transform: scale(1.35); opacity: 0; }
+  }
+
+  .level-anim-explode{ animation: level-explode-btn .3s ease; }
+  @keyframes level-explode-btn{
+    0%{ transform: scale(1); }
+    40%{ transform: scale(.88); }
+    100%{ transform: scale(1); }
+  }
+  .pixel-particle{
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    pointer-events: none;
+    animation: particle-fly .55s ease-out forwards;
+  }
+  @keyframes particle-fly{
+    0%{ transform: translate(-50%,-50%) scale(1); opacity: 1; }
+    100%{ transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.3); opacity: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .level-anim-pulse, .level-anim-spin, .level-anim-glitch,
+    .level-anim-wave::after, .level-anim-explode, .pixel-particle{ animation: none; }
+  }
+  .level-btn .level-count{
+    display: block;
+    font-family: 'VT323', monospace;
+    font-size: 0.95rem;
+    color: var(--muted);
+    margin-top: 6px;
+    letter-spacing: 0;
+  }
+
+  .rank-line{
+    font-family:'Press Start 2P', monospace;
+    font-size: 0.85rem;
+    color: var(--yellow);
+    text-shadow: 0 0 6px var(--yellow);
+    margin: 4px 0 8px;
+  }
+
+  .stats-line{
+    font-family:'VT323', monospace;
+    font-size: 1.1rem;
+    color: var(--muted);
+    margin: 0 0 18px;
+  }
+
+  .leaderboard{
+    text-align: left;
+    margin-bottom: 22px;
+    padding-bottom: 18px;
+    border-bottom: 2px dashed var(--card-edge);
+  }
+  .leaderboard h3{
+    font-family:'Press Start 2P', monospace;
+    font-size: 0.65rem;
+    letter-spacing: .03em;
+    color: var(--cyan);
+    margin: 0 0 12px;
+    text-align: center;
+  }
+
+  .leaderboard-item{
+    display:flex;
+    justify-content: space-between;
+    gap: 10px;
+    font-family:'VT323', monospace;
+    font-size: 1.15rem;
+    padding: 6px 10px;
+    border-radius: var(--radius);
+    background: #0e0620;
+    border: 1px solid var(--card-edge);
+    margin-bottom: 6px;
+  }
+  .leaderboard-item.my-entry{
+    border-color: var(--yellow);
+    box-shadow: 0 0 8px rgba(249,240,2,.4);
+    color: var(--yellow);
+  }
+
+  .final-summary{
+    text-align: left;
+    max-height: 320px;
+    overflow-y: auto;
+    margin: 8px 0 22px;
+    padding-top: 14px;
+    border-top: 2px dashed var(--card-edge);
+  }
+
+  .summary-item{
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--card-edge);
+  }
+  .summary-item:last-child{ border-bottom: none; }
+
+  .summary-question{
+    color: var(--cyan);
+    font-size: 1.05rem;
+    margin: 0 0 4px;
+  }
+
+  .final-summary p{
+    margin: 0;
+    font-family: 'VT323', monospace;
+    font-size: 1.05rem;
+  }
+  .guess-correct{ color: var(--green); }
+  .guess-wrong{ color: var(--wrong); }
+  .guess-answer{ color: var(--yellow); margin-top: 4px !important; }
+
+  /* ---------- Filmstrip / power bar ---------- */
+  .filmstrip{
+    width: 100%;
+    max-width: 560px;
+    display:flex;
+    align-items:center;
+    gap: 4px;
+    margin-bottom: 26px;
+    background: #0a0420;
+    border-radius: var(--radius);
+    padding: 8px;
+    border: 2px solid var(--card-edge);
+  }
+
+  .frame{
+    flex:1;
+    height: 18px;
+    border-radius: 2px;
+    background: #1c1040;
+    border: 1px solid var(--card-edge);
+    position:relative;
+    transition: background .3s ease, box-shadow .3s ease;
+  }
+  .frame.answered-correct{ background: var(--green); box-shadow: 0 0 8px var(--green); border-color: var(--green); }
+  .frame.answered-wrong{ background: var(--wrong); box-shadow: 0 0 8px var(--wrong); border-color: var(--wrong); }
+  .frame.current{ box-shadow: 0 0 0 2px var(--cyan), 0 0 10px var(--cyan); }
+
+  /* ---------- Walk to the cinema ---------- */
+  .walk-scene{
+    width: 100%;
+    max-width: 560px;
+    margin-top: 22px;
+  }
+
+  .walk-track{
+    position: relative;
+    height: 72px;
+    background: #0a0420;
+    border: 2px solid var(--card-edge);
+    border-radius: var(--radius);
+    overflow: hidden;
+    padding: 0 14px;
+  }
+
+  .walk-path{
+    position: absolute;
+    left: 14px;
+    right: 62px;
+    bottom: 16px;
+    height: 2px;
+    background: repeating-linear-gradient(90deg, var(--purple) 0 8px, transparent 8px 16px);
+    opacity: .8;
+  }
+
+  .walker{
+    position: absolute;
+    bottom: 8px;
+    left: 0%;
+    width: 28px;
+    height: 28px;
+    transition: left .6s cubic-bezier(.34,1.56,.64,1);
+  }
+
+  @media (prefers-reduced-motion: no-preference){
+    .walker svg{ animation: bob .5s ease-in-out infinite; }
+  }
+  @keyframes bob{
+    0%,100%{ transform: translateY(0); }
+    50%{ transform: translateY(-3px); }
+  }
+  .walker.arrived svg{ animation: none; }
+
+  .cinema-goal{
+    position: absolute;
+    right: 6px;
+    bottom: 2px;
+    width: 42px;
+  }
+  .cinema-goal .bulb{
+    animation: bulb-pulse 2.2s ease-in-out infinite;
+  }
+  .cinema-goal circle:nth-child(3){ animation-delay: .3s; }
+  .cinema-goal circle:nth-child(4){ animation-delay: .6s; }
+
+  .walk-caption{
+    text-align: center;
+    margin-top: 8px;
+    font-family: 'VT323', monospace;
+    font-size: 1.05rem;
+    color: var(--muted);
+  }
+
+  /* ---------- Ticket / arcade screen ---------- */
+  .stage{
+    width: 100%;
+    max-width: 560px;
+  }
+
+  .ticket{
+    background: var(--card);
+    border-radius: var(--radius);
+    border: 3px solid var(--purple);
+    padding: 26px 24px 22px;
+    position: relative;
+    box-shadow:
+      0 0 10px rgba(176,38,255,.6),
+      8px 8px 0 rgba(176,38,255,.25);
+  }
+
+  .ticket-label{
+    font-family:'Press Start 2P', monospace;
+    font-size: 0.58rem;
+    letter-spacing: .04em;
+    color: var(--yellow);
+    text-transform: uppercase;
+    display:flex;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+
+  .bad-rating{
+    color: var(--pink);
+    letter-spacing: 2px;
+    text-shadow: 0 0 6px var(--pink);
+  }
+
+  .lives-row{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .lives-label{
+    font-family:'Press Start 2P', monospace;
+    font-size: 0.55rem;
+    color: var(--muted);
+    letter-spacing: .04em;
+    margin-right: 4px;
+  }
+
+  .heart-icon{
+    color: var(--pink);
+    filter: drop-shadow(0 0 4px var(--pink));
+    transition: color .2s ease, opacity .2s ease, filter .2s ease;
+  }
+  .heart-icon svg rect{ fill: currentColor; }
+  .heart-icon.lost{
+    color: #2a1750;
+    opacity: .6;
+    filter: none;
+    animation: heartbreak .35s ease;
+  }
+  @keyframes heartbreak{
+    0%{ transform: scale(1); }
+    35%{ transform: scale(1.3) rotate(-8deg); }
+    70%{ transform: scale(.85) rotate(6deg); }
+    100%{ transform: scale(1) rotate(0); }
+  }
+
+  .common-points{
+    margin-top: 14px;
+    padding: 12px 14px;
+    background: #0e0620;
+    border: 2px dashed var(--purple);
+    border-radius: var(--radius);
+    font-family: 'VT323', monospace;
+    font-size: 1.05rem;
+    color: var(--text);
+  }
+  .common-points:empty{ display: none; padding: 0; border: none; margin-top: 0; }
+  .common-points p{ margin: 0 0 6px; color: var(--cyan); }
+  .common-points ul{ margin: 0; padding-left: 20px; }
+  .common-points-entry + .common-points-entry{
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--card-edge);
+  }
+  .common-points li{ margin-bottom: 2px; }
+
+  .poster-box{
+    margin-top: 16px;
+    text-align: center;
+    position: relative;
+  }
+  .poster-box img{
+    max-width: 160px;
+    width: 100%;
+    border-radius: var(--radius);
+    border: 3px solid var(--green);
+    box-shadow: 0 0 14px rgba(57,255,136,.5);
+    animation: poster-pop .5s cubic-bezier(.34,1.56,.64,1);
+  }
+  .poster-credit{
+    margin: 6px 0 0;
+    font-family: 'VT323', monospace;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  @keyframes poster-pop{
+    0%{ transform: scale(.6); opacity: 0; }
+    60%{ transform: scale(1.08); opacity: 1; }
+    100%{ transform: scale(1); opacity: 1; }
+  }
+  .poster-sparkle{
+    position: absolute;
+    color: var(--yellow);
+    font-size: 1.2rem;
+    line-height: 1;
+    pointer-events: none;
+    text-shadow: 0 0 6px var(--yellow);
+    animation: sparkle-twinkle .9s ease forwards;
+  }
+  @keyframes sparkle-twinkle{
+    0%{ transform: scale(0) rotate(0deg); opacity: 0; }
+    40%{ transform: scale(1.3) rotate(20deg); opacity: 1; }
+    100%{ transform: scale(.3) rotate(35deg); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .poster-box img{ animation: none; }
+    .poster-sparkle{ display: none; }
+  }
+
+  blockquote.review{
+    margin: 0 0 22px;
+    font-size: 1.5rem;
+    line-height: 1.4;
+    color: var(--text);
+    border-left: 3px solid var(--cyan);
+    padding-left: 16px;
+  }
+
+  blockquote.review::before{ content: "“"; color: var(--cyan); }
+  blockquote.review::after{ content: "”"; color: var(--cyan); }
+
+  .answer-form{
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .answer-input{
+    flex: 1 1 220px;
+    font-family:'VT323', monospace;
+    font-size: 1.3rem;
+    background: #0e0620;
+    color: var(--text);
+    border: 2px solid var(--cyan);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    box-shadow: 3px 3px 0 rgba(0,240,255,.3);
+  }
+  .answer-input:focus-visible{ outline: 2px solid var(--yellow); outline-offset: 2px; }
+  .answer-input:disabled{ opacity: .7; }
+  .answer-input.correct{ border-color: var(--green); box-shadow: 0 0 10px var(--green); background: rgba(57,255,136,.12); }
+  .answer-input.wrong{ border-color: var(--wrong); box-shadow: 0 0 10px var(--wrong); background: rgba(255,56,96,.12); }
+
+  .answer-submit-btn{
+    font-family:'Press Start 2P', monospace;
+    font-size: 0.65rem;
+    letter-spacing: .02em;
+    background: var(--cyan);
+    color: #0b0316;
+    border: none;
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    cursor:pointer;
+    box-shadow: 3px 3px 0 rgba(0,240,255,.4);
+  }
+  .answer-submit-btn:hover:not(:disabled){ transform: translate(-1px,-1px); box-shadow: 4px 4px 0 rgba(0,240,255,.55); }
+  .answer-submit-btn:disabled{ opacity:.5; cursor:default; }
+  .answer-submit-btn:focus-visible{ outline: 2px solid var(--yellow); outline-offset: 2px; }
+
+  .feedback{
+    min-height: 26px;
+    margin-top: 16px;
+    font-family:'VT323', monospace;
+    font-size: 1.15rem;
+    letter-spacing:.01em;
+  }
+  .feedback.correct{ color: var(--green); text-shadow: 0 0 6px var(--green); }
+  .feedback.wrong{ color: var(--wrong); text-shadow: 0 0 6px var(--wrong); }
+
+  .next-btn{
+    margin-top: 18px;
+    font-family:'Press Start 2P', monospace;
+    letter-spacing: .02em;
+    font-size: 0.7rem;
+    background: var(--pink);
+    color: #0b0316;
+    border: none;
+    border-radius: var(--radius);
+    padding: 12px 18px;
+    cursor:pointer;
+    display:none;
+    box-shadow: 3px 3px 0 rgba(255,46,154,.4);
+  }
+  .next-btn:hover{ transform: translate(-1px,-1px); box-shadow: 4px 4px 0 rgba(255,46,154,.55); }
+  .next-btn:focus-visible{ outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+  /* ---------- Result screen ---------- */
+  .result{
+    text-align:center;
+    padding: 10px 6px 4px;
+  }
+
+  .stars{
+    font-size: 2.2rem;
+    letter-spacing: 6px;
+    margin: 10px 0 4px;
+    color: #3a2c66;
+  }
+  .stars .lit{ color: var(--yellow); text-shadow: 0 0 10px var(--yellow); }
+
+  .level{
+    font-family:'Press Start 2P', monospace;
+    font-size: clamp(1rem, 4.5vw, 1.5rem);
+    color: var(--pink);
+    letter-spacing: .02em;
+    margin: 10px 0 8px;
+    text-shadow: 0 0 8px var(--pink);
+  }
+
+  .score-line{
+    color: var(--cyan);
+    font-family:'VT323', monospace;
+    font-size: 1.2rem;
+    margin-bottom: 24px;
+  }
+
+  .replay-btn{
+    font-family:'Press Start 2P', monospace;
+    letter-spacing: .02em;
+    font-size: 0.85rem;
+    background: var(--yellow);
+    color: #0b0316;
+    border: none;
+    border-radius: var(--radius);
+    padding: 14px 26px;
+    cursor:pointer;
+    box-shadow: 4px 4px 0 rgba(249,240,2,.4);
+  }
+  .replay-btn:hover{ transform: translate(-1px,-1px); box-shadow: 5px 5px 0 rgba(249,240,2,.55); }
+  .replay-btn:focus-visible{ outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+  .hidden{ display:none !important; }
+
+  footer{
+    margin-top: 34px;
+    font-family:'VT323', monospace;
+    font-size: 1.1rem;
+    color: var(--purple);
+    letter-spacing:.02em;
+    text-shadow: 0 0 6px var(--purple);
+  }
+
+  /* ---------- Editor panel ---------- */
+  .editor-panel{
+    width: 100%;
+    max-width: 560px;
+    background: var(--card);
+    border: 3px solid var(--cyan);
+    border-radius: var(--radius);
+    padding: 22px 22px 24px;
+    margin-bottom: 26px;
+    box-shadow: 0 0 12px rgba(0,240,255,.4), 8px 8px 0 rgba(0,240,255,.15);
+  }
+
+  .editor-panel h2{
+    font-family:'Press Start 2P', monospace;
+    letter-spacing: .02em;
+    font-size: 1rem;
+    color: var(--yellow);
+    margin: 0 0 8px;
+  }
+
+  .editor-panel p.hint{
+    color: var(--muted);
+    font-size: 1.05rem;
+    margin: 0 0 18px;
+  }
+
+  .field{
+    margin-bottom: 14px;
+  }
+
+  .field label{
+    display:block;
+    font-family:'Press Start 2P', monospace;
+    font-size: 0.55rem;
+    letter-spacing:.03em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    margin-bottom: 8px;
+  }
+
+  .field textarea, .field input[type="text"], .field select{
+    width:100%;
+    background:#0e0620;
+    border: 2px solid var(--card-edge);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family:'VT323', monospace;
+    font-size: 1.15rem;
+    padding: 10px 12px;
+    resize: vertical;
+  }
+  .field textarea:focus-visible, .field input:focus-visible, .field select:focus-visible{
+    outline: 2px solid var(--cyan); outline-offset: 1px;
+  }
+
+  .option-fields{
+    display:grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px 10px;
+    align-items:center;
+  }
+  .option-fields .radio-row{
+    display:contents;
+  }
+  .option-fields input[type="radio"]{ accent-color: var(--pink); }
+
+  .editor-actions{
+    display:flex;
+    gap: 10px;
+    flex-wrap:wrap;
+    margin-top: 18px;
+    align-items:center;
+  }
+
+  .primary-btn{
+    font-family:'Press Start 2P', monospace;
+    letter-spacing: .02em;
+    font-size: 0.68rem;
+    background: var(--pink);
+    color: #0b0316;
+    border: none;
+    border-radius: var(--radius);
+    padding: 12px 18px;
+    cursor:pointer;
+    box-shadow: 3px 3px 0 rgba(255,46,154,.4);
+  }
+  .primary-btn:hover{ transform: translate(-1px,-1px); box-shadow: 4px 4px 0 rgba(255,46,154,.55); }
+  .primary-btn:focus-visible{ outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+  .editor-form-msg{
+    font-family:'VT323', monospace;
+    font-size: 1.05rem;
+    margin-top: 10px;
+    min-height: 20px;
+    color: var(--wrong);
+  }
+  .editor-form-msg.ok{ color: var(--green); }
+
+  .custom-list{
+    margin-top: 22px;
+    border-top: 2px dashed var(--card-edge);
+    padding-top: 16px;
+  }
+
+  .custom-list h3{
+    font-family:'Press Start 2P', monospace;
+    font-size: 0.6rem;
+    letter-spacing:.03em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 12px;
+  }
+
+  .level-group-header{
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: #1b1013;
+    border: 2px solid var(--card-edge);
+    border-radius: var(--radius);
+    color: var(--cyan);
+    font-family: 'VT323', monospace;
+    font-size: 1.15rem;
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    cursor: pointer;
+  }
+  .level-group-header:hover{ border-color: var(--cyan); }
+  .level-group-body{ margin-bottom: 10px; }
+
+  .custom-item{
+    display:flex;
+    align-items:flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    background:#0e0620;
+    border: 2px solid var(--card-edge);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+
+  .custom-item p{
+    margin:0;
+    font-size: 1.05rem;
+    color: var(--text);
+  }
+
+  .custom-item .item-actions{
+    display:flex;
+    gap: 6px;
+    flex-shrink:0;
+  }
+
+  .icon-btn{
+    background: transparent;
+    border: 2px solid var(--card-edge);
+    color: var(--muted);
+    border-radius: var(--radius);
+    font-family:'Press Start 2P', monospace;
+    font-size: 0.5rem;
+    padding: 6px 8px;
+    cursor:pointer;
+  }
+  .icon-btn:hover{ color: var(--cyan); border-color: var(--cyan); }
+  .icon-btn.danger:hover{ color: var(--wrong); border-color: var(--wrong); }
+
+  .level-manage-row{ align-items: center; flex-wrap: wrap; }
+  .level-manage-info{
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1 1 220px;
+  }
+  .level-manage-info p{ color: var(--cyan); font-weight: normal; }
+  .level-manage-info input[type="text"],
+  .level-manage-info select{
+    background:#1b1013;
+    border: 1px solid #3a2027;
+    border-radius: 8px;
+    color: var(--cream);
+    font-family:'VT323', monospace;
+    font-size: 0.95rem;
+    padding: 6px 8px;
+  }
+
+  .empty-note{
+    color: var(--muted);
+    font-size: 1.05rem;
+  }
+
+  .import-export-row{
+    display:flex;
+    gap: 10px;
+    flex-wrap:wrap;
+    margin-top: 16px;
+    border-top: 2px dashed var(--card-edge);
+    padding-top: 16px;
+  }
+
+  #importInput{ display:none; }
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+  <div class="tv-overlay" id="tvOverlay" aria-hidden="true">
+    <div class="tv-line"></div>
+  </div>
+
+  <div class="marquee">
+    <div class="marquee-frame">
+      <h1 class="title">CINETOILE</h1>
+    </div>
+    <p class="subtitle">&gt; DEVINE LE FILM DERRIERE LA CRITIQUE LA PLUS ASSASSINE_</p>
+  </div>
+
+  <div class="admin-gate hidden" id="adminGate">
+    <div class="ticket start-ticket">
+      <div class="ticket-label"><span>ACCES ADMIN</span></div>
+      <p class="hint">Mot de passe requis pour gérer les critiques.</p>
+      <form id="adminPasswordForm" class="answer-form">
+        <input type="password" class="answer-input" id="adminPasswordInput" placeholder="Mot de passe..." autocomplete="off">
+        <button type="submit" class="answer-submit-btn">DEVERROUILLER</button>
+      </form>
+      <p class="editor-form-msg" id="adminGateMsg"></p>
+    </div>
+  </div>
+
+  <div class="rules-screen" id="rulesScreen">
+    <div class="ticket start-ticket">
+      <div class="ticket-label"><span>REGLES DU JEU</span></div>
+      <p class="rules-text">
+        Bienvenu.e dans Cinétoile, le jeu qui affiche les pires critiques des meilleurs films du 7ème art.
+        Le principe est simple : après avoir entré votre pseudo, vous devrez deviner le film à partir de sa critique assassine.
+        Vous avez 5 essais par film. Si vous vous trompez, pas de panique : le jeu vous indiquera ce que votre film
+        et celui que vous cherchez ont en commun (ex : genre, acteurs, année, etc.).
+      </p>
+      <button type="button" class="ghost-btn hidden" id="closeRulesBtn">FERMER</button>
+    </div>
+  </div>
+
+  <div class="start-screen" id="startScreen">
+    <div class="ticket start-ticket">
+      <div class="ticket-label"><span>ACCES SALLE</span></div>
+      <p class="hint">Entre ton pseudo pour jouer et voir ta place dans le classement.</p>
+      <form id="pseudoForm" class="answer-form">
+        <input type="text" class="answer-input" id="pseudoInput" placeholder="Ton pseudo..." maxlength="20" autocomplete="off">
+        <button type="submit" class="answer-submit-btn">JOUER</button>
+      </form>
+      <p class="pseudo-note">
+        Le classement suit tes statistiques (meilleur score, parties jouées) au fil de tes parties.
+        Utilise toujours le <strong>même pseudo</strong> pour les retrouver !
+      </p>
+    </div>
+  </div>
+
+  <div class="start-screen hidden" id="levelScreen">
+    <div class="ticket start-ticket">
+      <div class="ticket-label"><span>CHOISIS TON NIVEAU</span></div>
+      <p class="hint">Sélectionne le niveau de difficulté auquel tu veux jouer.</p>
+      <div id="levelList" class="level-list"></div>
+    </div>
+  </div>
+
+  <div class="game-area hidden" id="gameArea">
+
+  <div class="editor-toggle-row toolbar-row">
+    <button class="ghost-btn" id="editorToggle">✎ GERER MES CRITIQUES</button>
+    <button class="ghost-btn" id="musicToggle">🔇 MUSIQUE</button>
+    <button class="ghost-btn" id="changeLevelBtn">🎚 CHANGER DE NIVEAU</button>
+    <button class="ghost-btn" id="viewLeaderboardBtn">🏆 VOIR LE CLASSEMENT</button>
+    <button class="ghost-btn" id="myStatsBtn">🏆 MON CLASSEMENT</button>
+    <button class="ghost-btn" id="rulesToggleBtn">📜 REGLES</button>
+  </div>
+
+  <section class="editor-panel hidden" id="leaderboardPanel" aria-label="Classement complet">
+    <h2>CLASSEMENT</h2>
+    <p class="hint">Statistiques de tous les joueurs, mises à jour à chaque partie.</p>
+    <p class="stats-line" id="myStatsSummary"></p>
+    <div id="adminLeaderboardList"></div>
+    <div class="editor-actions">
+      <button type="button" class="ghost-btn" id="closeLeaderboardBtn">FERMER</button>
+    </div>
+  </section>
+
+  <section class="editor-panel hidden" id="editorPanel" aria-label="Gestion des critiques personnalisées">
+    <h2>AJOUTER UNE CRITIQUE</h2>
+    <p class="hint">Écris une critique assassine, propose 4 films possibles et coche le bon.</p>
+
+    <form id="reviewForm">
+      <div class="field">
+        <label for="reviewInput">La critique</label>
+        <textarea id="reviewInput" rows="3" placeholder="Ex : Un homme refuse de vieillir et embête tout un village avec une potion magique."></textarea>
+      </div>
+
+      <div class="field">
+        <label for="answerField">Le titre du film (bonne réponse)</label>
+        <input type="text" id="answerField" placeholder="Ex : Astérix et Obélix : Mission Cléopâtre">
+      </div>
+
+      <div class="field">
+        <label for="aliasesField">Autres réponses acceptées (facultatif, séparées par des virgules)</label>
+        <input type="text" id="aliasesField" placeholder="Ex : Mission Cléopâtre, Astérix Mission Cléopâtre">
+      </div>
+
+      <div class="field">
+        <label for="levelSelect">Niveau</label>
+        <div class="option-fields" style="grid-template-columns: 1fr auto;">
+          <select id="levelSelect"></select>
+          <button type="button" class="ghost-btn" id="newLevelBtn">+ NOUVEAU NIVEAU</button>
+        </div>
+      </div>
+
+      <div class="editor-actions">
+        <button type="submit" class="primary-btn" id="submitBtn">AJOUTER</button>
+        <button type="button" class="ghost-btn hidden" id="cancelEditBtn">ANNULER</button>
+      </div>
+      <div class="editor-form-msg" id="formMsg"></div>
+    </form>
+
+    <div class="custom-list">
+      <h3>MODIFIER LES CRITIQUES</h3>
+      <p class="hint">Toutes les critiques du quiz — les tiennes et celles d'origine. Clique sur MODIF. pour changer le texte, les propositions ou la bonne réponse.</p>
+      <div id="customListBody"></div>
+    </div>
+
+    <div class="custom-list">
+      <h3>GERER LES NIVEAUX</h3>
+      <p class="hint">Image (URL) et animation de clic pour chaque niveau.</p>
+      <div id="levelManageList"></div>
+    </div>
+
+    <div class="import-export-row">
+      <button class="ghost-btn" id="exportBtn">⭳ EXPORTER</button>
+      <button class="ghost-btn" id="importBtn">⭱ IMPORTER</button>
+      <button class="ghost-btn" id="resetBtn">↺ REINITIALISER</button>
+      <input type="file" id="importInput" accept="application/json">
+    </div>
+  </section>
+
+  <div class="filmstrip" id="filmstrip" aria-hidden="true"></div>
+
+  <div class="stage">
+    <div class="ticket" id="quizCard">
+      <div class="ticket-label">
+        <span id="qCounter">QUESTION 1 / 12</span>
+        <span class="bad-rating" id="badRating">★☆☆☆☆</span>
+      </div>
+      <div class="lives-row" id="livesRow">
+        <span class="lives-label">ESSAIS :</span>
+        <span class="heart-icon" id="heart-0"><svg viewBox="0 0 14 12" width="18" height="16"><rect x="2" y="0" width="4" height="2"/><rect x="8" y="0" width="4" height="2"/><rect x="0" y="2" width="14" height="2"/><rect x="0" y="4" width="14" height="2"/><rect x="2" y="6" width="10" height="2"/><rect x="4" y="8" width="6" height="2"/><rect x="6" y="10" width="2" height="2"/></svg></span>
+        <span class="heart-icon" id="heart-1"><svg viewBox="0 0 14 12" width="18" height="16"><rect x="2" y="0" width="4" height="2"/><rect x="8" y="0" width="4" height="2"/><rect x="0" y="2" width="14" height="2"/><rect x="0" y="4" width="14" height="2"/><rect x="2" y="6" width="10" height="2"/><rect x="4" y="8" width="6" height="2"/><rect x="6" y="10" width="2" height="2"/></svg></span>
+        <span class="heart-icon" id="heart-2"><svg viewBox="0 0 14 12" width="18" height="16"><rect x="2" y="0" width="4" height="2"/><rect x="8" y="0" width="4" height="2"/><rect x="0" y="2" width="14" height="2"/><rect x="0" y="4" width="14" height="2"/><rect x="2" y="6" width="10" height="2"/><rect x="4" y="8" width="6" height="2"/><rect x="6" y="10" width="2" height="2"/></svg></span>
+        <span class="heart-icon" id="heart-3"><svg viewBox="0 0 14 12" width="18" height="16"><rect x="2" y="0" width="4" height="2"/><rect x="8" y="0" width="4" height="2"/><rect x="0" y="2" width="14" height="2"/><rect x="0" y="4" width="14" height="2"/><rect x="2" y="6" width="10" height="2"/><rect x="4" y="8" width="6" height="2"/><rect x="6" y="10" width="2" height="2"/></svg></span>
+        <span class="heart-icon" id="heart-4"><svg viewBox="0 0 14 12" width="18" height="16"><rect x="2" y="0" width="4" height="2"/><rect x="8" y="0" width="4" height="2"/><rect x="0" y="2" width="14" height="2"/><rect x="0" y="4" width="14" height="2"/><rect x="2" y="6" width="10" height="2"/><rect x="4" y="8" width="6" height="2"/><rect x="6" y="10" width="2" height="2"/></svg></span>
+      </div>
+      <blockquote class="review" id="reviewText"></blockquote>
+      <form class="answer-form" id="answerForm">
+        <input type="text" class="answer-input" id="answerInput" placeholder="Le titre du film..." autocomplete="off">
+        <button type="submit" class="answer-submit-btn">VALIDER</button>
+      </form>
+      <div class="feedback" id="feedback"></div>
+      <div class="common-points" id="commonPoints"></div>
+      <div class="poster-box hidden" id="posterBox">
+        <img id="posterImg" alt="Affiche du film">
+        <p class="poster-credit">Affiche via TMDb</p>
+      </div>
+      <button class="next-btn" id="nextBtn">SUIVANT →</button>
+    </div>
+
+    <div class="ticket result hidden" id="resultCard">
+      <div class="ticket-label"><span id="resultHeader">RECAP</span></div>
+      <div class="stars" id="resultStars"></div>
+      <div class="level" id="resultLevel"></div>
+      <div class="score-line" id="resultScore"></div>
+      <div class="rank-line" id="rankLine"></div>
+      <div class="stats-line" id="statsLine"></div>
+
+      <div class="leaderboard" id="leaderboard">
+        <h3>CLASSEMENT</h3>
+        <div id="leaderboardList"></div>
+        <div class="import-export-row hidden" id="lbAdminRow">
+          <button class="ghost-btn" id="lbExportBtn">⭳ EXPORTER LE CLASSEMENT</button>
+          <button class="ghost-btn" id="lbImportBtn">⭱ IMPORTER LE CLASSEMENT</button>
+          <input type="file" id="lbImportInput" accept="application/json">
+        </div>
+      </div>
+
+      <div class="final-summary" id="finalSummary"></div>
+      <button class="replay-btn" id="replayBtn">REJOUER</button>
+    </div>
+  </div>
+
+  <div class="walk-scene" id="walkScene" aria-hidden="true">
+    <div class="walk-track">
+      <div class="walk-path"></div>
+      <div class="walker" id="walker">
+        <svg viewBox="0 0 20 22" width="28" height="28">
+          <circle cx="10" cy="8" r="7" fill="none" stroke="var(--cyan)" stroke-width="2"/>
+          <circle cx="10" cy="8" r="2.4" fill="var(--cyan)"/>
+          <circle cx="10" cy="4" r="1.1" fill="var(--cyan)"/>
+          <circle cx="6.5" cy="10.5" r="1.1" fill="var(--cyan)"/>
+          <circle cx="13.5" cy="10.5" r="1.1" fill="var(--cyan)"/>
+          <rect x="8.7" y="7.3" width="0.8" height="0.8" fill="#0b0316"/>
+          <rect x="10.6" y="7.3" width="0.8" height="0.8" fill="#0b0316"/>
+          <rect x="7" y="15" width="2.4" height="6" fill="var(--cyan)"/>
+          <rect x="10.6" y="15" width="2.4" height="6" fill="var(--cyan)"/>
+        </svg>
+      </div>
+      <div class="cinema-goal">
+        <svg viewBox="0 0 32 32" width="42" height="42">
+          <rect x="2" y="10" width="28" height="20" fill="#1c1040" stroke="var(--purple)" stroke-width="2"/>
+          <rect x="6" y="3" width="20" height="8" fill="#1c1040" stroke="var(--pink)" stroke-width="2"/>
+          <circle class="bulb" cx="9" cy="7" r="1.4" fill="var(--yellow)"/>
+          <circle class="bulb" cx="16" cy="7" r="1.4" fill="var(--yellow)"/>
+          <circle class="bulb" cx="23" cy="7" r="1.4" fill="var(--yellow)"/>
+          <rect x="13" y="20" width="6" height="10" fill="var(--cyan)"/>
+        </svg>
+      </div>
+    </div>
+    <p class="walk-caption" id="walkCaption">0 / 12 vers la salle</p>
+  </div>
+
+  <footer>Le plus personnel est le plus créatif.</footer>
+
+  </div>
+
+<script>
+  (function powerOnTV(){
+    const tv = document.getElementById('tvOverlay');
+    if (!tv) return;
+    setTimeout(() => {
+      tv.classList.add('tv-line-on');
+      playTVOnSound();
+      setTimeout(() => {
+        tv.classList.add('tv-expand');
+        tv.classList.add('tv-off');
+        playTVFadeSound();
+        setTimeout(() => { tv.classList.add('tv-done'); }, 650);
+      }, 980);
+    }, 400);
+  })();
+
+  function playTVFadeSound(){
+    try {
+      initAudio();
+      if (!audioCtx) return;
+      const t = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(300, t);
+      osc.frequency.exponentialRampToValueAtTime(170, t + 0.6);
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.05, t + 0.15);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.65);
+      osc.connect(g);
+      g.connect(masterGain);
+      osc.start(t);
+      osc.stop(t + 0.7);
+    } catch (err){
+      // pas grave si l'audio ne peut pas démarrer automatiquement (politique du navigateur)
+    }
+  }
+
+  function playTVOnSound(){
+    try {
+      initAudio();
+      if (!audioCtx) return;
+      const t = audioCtx.currentTime;
+      // clic de mise sous tension
+      playTone(90, t, 0.03, 'square', 0.12);
+      // sifflement montant façon tube cathodique
+      const osc = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(140, t + 0.08);
+      osc.frequency.exponentialRampToValueAtTime(2000, t + 0.42);
+      g.gain.setValueAtTime(0, t + 0.08);
+      g.gain.linearRampToValueAtTime(0.06, t + 0.13);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.48);
+      osc.connect(g);
+      g.connect(masterGain);
+      osc.start(t + 0.08);
+      osc.stop(t + 0.5);
+    } catch (err){
+      // pas grave si l'audio ne peut pas démarrer automatiquement (politique du navigateur)
+    }
+  }
+
+  const BASE_QUESTIONS = [
+    {
+      review: "Trois heures pour regarder un bateau couler et pleurer devant un dessin au fusain.",
+      answer: "Titanic"
+    },
+    {
+      review: "Des animaux chantent leurs problèmes de succession familiale pendant qu'un rocher les éclaire.",
+      answer: "Le Roi Lion"
+    },
+    {
+      review: "Un vieil homme en robe agite un bâton lumineux et tout le monde crie au génie stratégique.",
+      answer: "Star Wars",
+      aliases: ["La Guerre des étoiles"]
+    },
+    {
+      review: "Un parc d'attractions où le personnel oublie systématiquement d'éteindre l'électricité.",
+      answer: "Jurassic Park"
+    },
+    {
+      review: "Neuf heures de marche pour aller jeter un bijou dans un volcan.",
+      answer: "Le Seigneur des Anneaux",
+      aliases: ["SDA"]
+    },
+    {
+      review: "Un enfant découvre qu'il est spécial, comme dans absolument toutes les histoires jamais écrites.",
+      answer: "Harry Potter",
+      aliases: ["HP"]
+    },
+    {
+      review: "Des gens bleus pleurent des arbres pendant trois heures et on nous facture des lunettes en plus.",
+      answer: "Avatar"
+    },
+    {
+      review: "Personne ne sait vraiment si c'est un rêve, y compris apparemment le scénariste.",
+      answer: "Inception"
+    },
+    {
+      review: "Une serveuse résout les problèmes de tout le quartier sauf les siens, pendant deux heures de filtre jaune.",
+      answer: "Le Fabuleux Destin d'Amélie Poulain",
+      aliases: ["Amélie Poulain", "Amélie"]
+    },
+    {
+      review: "Un homme se fait frapper au visage pendant une heure et demie, puis recommence dans la suite.",
+      answer: "Rocky"
+    },
+    {
+      review: "Un poisson en caoutchouc terrorise une ville entière et un océan de vacanciers.",
+      answer: "Les Dents de la mer",
+      aliases: ["Jaws"]
+    },
+    {
+      review: "Un extraterrestre boit une bière, téléphone à sa maman, et on appelle ça un chef-d'œuvre.",
+      answer: "E.T. l'extra-terrestre",
+      aliases: ["ET", "E.T."]
+    }
+  ];
+
+  const LEVELS = [
+    { min: 0,  stars: 1, name: "POPCORN RENVERSE" },
+    { min: 4,  stars: 2, name: "SPECTATEUR DU DIMANCHE" },
+    { min: 7,  stars: 3, name: "CINEPHILE CONFIRME" },
+    { min: 10, stars: 4, name: "CRITIQUE REDOUTE" },
+    { min: 12, stars: 5, name: "LEGENDE DU 7E ART" }
+  ];
+
+  // Petite base de données maison : année, genre(s), réalisateur, acteur principal.
+  // Sert à afficher les points communs entre le film deviné et le bon film.
+  const MOVIE_INFO_RAW = {
+    "titanic": { year: 1997, genre: ["Drame", "Romance"], director: "James Cameron", actor: "Leonardo DiCaprio" },
+    "le roi lion": { year: 1994, genre: ["Animation", "Drame"], director: "Roger Allers", actor: null },
+    "star wars": { year: 1977, genre: ["Science-fiction", "Aventure"], director: "George Lucas", actor: "Mark Hamill" },
+    "jurassic park": { year: 1993, genre: ["Science-fiction", "Aventure"], director: "Steven Spielberg", actor: "Sam Neill" },
+    "le seigneur des anneaux": { year: 2001, genre: ["Fantastique", "Aventure"], director: "Peter Jackson", actor: "Elijah Wood" },
+    "harry potter": { year: 2001, genre: ["Fantastique", "Aventure"], director: "Chris Columbus", actor: "Daniel Radcliffe" },
+    "avatar": { year: 2009, genre: ["Science-fiction", "Aventure"], director: "James Cameron", actor: "Sam Worthington" },
+    "inception": { year: 2010, genre: ["Science-fiction", "Thriller"], director: "Christopher Nolan", actor: "Leonardo DiCaprio" },
+    "le fabuleux destin d'amelie poulain": { year: 2001, genre: ["Comédie", "Romance"], director: "Jean-Pierre Jeunet", actor: "Audrey Tautou" },
+    "rocky": { year: 1976, genre: ["Drame"], director: "John G. Avildsen", actor: "Sylvester Stallone" },
+    "les dents de la mer": { year: 1975, genre: ["Thriller", "Horreur"], director: "Steven Spielberg", actor: "Roy Scheider" },
+    "e.t. l'extra-terrestre": { year: 1982, genre: ["Science-fiction", "Aventure"], director: "Steven Spielberg", actor: "Henry Thomas" },
+
+    "le hobbit": { year: 2012, genre: ["Fantastique", "Aventure"], director: "Peter Jackson", actor: "Martin Freeman" },
+    "indiana jones": { year: 1981, genre: ["Aventure", "Action"], director: "Steven Spielberg", actor: "Harrison Ford" },
+    "conan le barbare": { year: 1982, genre: ["Fantastique", "Action"], director: "John Milius", actor: "Arnold Schwarzenegger" },
+    "matrix": { year: 1999, genre: ["Science-fiction", "Action"], director: "Lana et Lilly Wachowski", actor: "Keanu Reeves" },
+    "percy jackson": { year: 2010, genre: ["Fantastique", "Aventure"], director: "Chris Columbus", actor: "Logan Lerman" },
+    "le cinquieme element": { year: 1997, genre: ["Science-fiction", "Action"], director: "Luc Besson", actor: "Bruce Willis" },
+    "dune": { year: 2021, genre: ["Science-fiction", "Aventure"], director: "Denis Villeneuve", actor: "Timothée Chalamet" },
+    "interstellar": { year: 2014, genre: ["Science-fiction", "Drame"], director: "Christopher Nolan", actor: "Matthew McConaughey" },
+    "shutter island": { year: 2010, genre: ["Thriller", "Drame"], director: "Martin Scorsese", actor: "Leonardo DiCaprio" },
+    "vanilla sky": { year: 2001, genre: ["Thriller", "Romance"], director: "Cameron Crowe", actor: "Tom Cruise" },
+    "chocolat": { year: 2000, genre: ["Comédie", "Drame"], director: "Lasse Hallström", actor: "Juliette Binoche" },
+    "paris je t'aime": { year: 2006, genre: ["Romance", "Comédie"], director: "Collectif", actor: null },
+    "la mome": { year: 2007, genre: ["Drame"], director: "Olivier Dahan", actor: "Marion Cotillard" },
+    "raging bull": { year: 1980, genre: ["Drame"], director: "Martin Scorsese", actor: "Robert De Niro" },
+    "fight club": { year: 1999, genre: ["Drame", "Thriller"], director: "David Fincher", actor: "Brad Pitt" },
+    "creed": { year: 2015, genre: ["Drame"], director: "Ryan Coogler", actor: "Michael B. Jordan" },
+    "piranha": { year: 1978, genre: ["Horreur"], director: "Joe Dante", actor: null },
+    "le grand bleu": { year: 1988, genre: ["Drame", "Aventure"], director: "Luc Besson", actor: "Jean-Marc Barr" },
+    "sharknado": { year: 2013, genre: ["Horreur", "Comédie"], director: "Anthony C. Ferrante", actor: "Ian Ziering" },
+    "rencontres du troisieme type": { year: 1977, genre: ["Science-fiction"], director: "Steven Spielberg", actor: "Richard Dreyfuss" },
+    "cocoon": { year: 1985, genre: ["Science-fiction", "Comédie"], director: "Ron Howard", actor: "Don Ameche" },
+    "district 9": { year: 2009, genre: ["Science-fiction", "Action"], director: "Neill Blomkamp", actor: "Sharlto Copley" },
+    "madagascar": { year: 2005, genre: ["Animation", "Comédie"], director: "Eric Darnell", actor: null },
+    "bambi": { year: 1942, genre: ["Animation", "Drame"], director: "David Hand", actor: null },
+    "kung fu panda": { year: 2008, genre: ["Animation", "Comédie"], director: "Mark Osborne", actor: null },
+    "westworld": { year: 1973, genre: ["Science-fiction"], director: "Michael Crichton", actor: "Yul Brynner" },
+    "king kong": { year: 2005, genre: ["Aventure", "Fantastique"], director: "Peter Jackson", actor: "Naomi Watts" },
+    "godzilla": { year: 2014, genre: ["Science-fiction", "Action"], director: "Gareth Edwards", actor: null },
+    "le nom de la rose": { year: 1986, genre: ["Mystère", "Drame"], director: "Jean-Jacques Annaud", actor: "Sean Connery" }
+  };
+
+  // Construit un dictionnaire dont les clés sont normalisées (sans accents,
+  // sans articles, en minuscules) pour matcher avec la saisie de l'utilisateur.
+  const MOVIE_DB = {};
+  Object.keys(MOVIE_INFO_RAW).forEach(key => {
+    MOVIE_DB[normalize(key)] = MOVIE_INFO_RAW[key];
+  });
+
+  function getCommonPoints(a, b){
+    const pts = [];
+    if (a.year && b.year){
+      if (a.year === b.year) pts.push(`la même année de sortie (${a.year})`);
+      else if (Math.floor(a.year / 10) === Math.floor(b.year / 10)) pts.push(`la même décennie (années ${Math.floor(a.year / 10) * 10})`);
+    }
+    if (a.director && b.director && a.director === b.director) pts.push(`le même réalisateur : ${a.director}`);
+    if (a.actor && b.actor && a.actor === b.actor) pts.push(`le même acteur principal : ${a.actor}`);
+    if (a.genre && b.genre){
+      const shared = a.genre.filter(g => b.genre.includes(g));
+      if (shared.length) pts.push(`le genre ${shared.join(' / ')}`);
+    }
+    return pts;
+  }
+
+  let allQuestions = BASE_QUESTIONS.map(q => ({ review: q.review, answer: q.answer, aliases: (q.aliases || []).slice(), level: q.level || 'Facile' }));
+  let QUESTIONS = allQuestions;
+  let editingIndex = null;
+
+  let current = 0;
+  let score = 0;
+  let attemptsLeft = 5;
+  let currentGuesses = [];
+  const MAX_ATTEMPTS = 5;
+  const history = [];
+
+  const heartEls = [
+    document.getElementById('heart-0'),
+    document.getElementById('heart-1'),
+    document.getElementById('heart-2'),
+    document.getElementById('heart-3'),
+    document.getElementById('heart-4')
+  ];
+
+  const filmstrip = document.getElementById('filmstrip');
+  const qCounter = document.getElementById('qCounter');
+  const reviewText = document.getElementById('reviewText');
+  const answerForm = document.getElementById('answerForm');
+  const answerInput = document.getElementById('answerInput');
+  const answerSubmitBtn = answerForm.querySelector('.answer-submit-btn');
+  let questionAnswered = false;
+  let gameOver = false;
+  const feedbackEl = document.getElementById('feedback');
+  const commonPointsEl = document.getElementById('commonPoints');
+  const posterBox = document.getElementById('posterBox');
+  const posterImg = document.getElementById('posterImg');
+  const nextBtn = document.getElementById('nextBtn');
+  const quizCard = document.getElementById('quizCard');
+  const resultCard = document.getElementById('resultCard');
+  const replayBtn = document.getElementById('replayBtn');
+  const walker = document.getElementById('walker');
+  const walkCaption = document.getElementById('walkCaption');
+  const finalSummaryEl = document.getElementById('finalSummary');
+
+  const startScreen = document.getElementById('startScreen');
+  const levelScreen = document.getElementById('levelScreen');
+  const levelList = document.getElementById('levelList');
+  const gameArea = document.getElementById('gameArea');
+  const pseudoForm = document.getElementById('pseudoForm');
+  const pseudoInput = document.getElementById('pseudoInput');
+  const changeLevelBtn = document.getElementById('changeLevelBtn');
+  const rulesScreen = document.getElementById('rulesScreen');
+  const rulesToggleBtn = document.getElementById('rulesToggleBtn');
+  const closeRulesBtn = document.getElementById('closeRulesBtn');
+  const viewLeaderboardBtn = document.getElementById('viewLeaderboardBtn');
+  const myStatsBtn = document.getElementById('myStatsBtn');
+  const myStatsSummary = document.getElementById('myStatsSummary');
+  const leaderboardPanel = document.getElementById('leaderboardPanel');
+  const adminLeaderboardList = document.getElementById('adminLeaderboardList');
+  const closeLeaderboardBtn = document.getElementById('closeLeaderboardBtn');
+  const levelSelect = document.getElementById('levelSelect');
+  const newLevelBtn = document.getElementById('newLevelBtn');
+  const levelManageList = document.getElementById('levelManageList');
+  const rankLine = document.getElementById('rankLine');
+  const statsLine = document.getElementById('statsLine');
+  const leaderboardList = document.getElementById('leaderboardList');
+  const lbExportBtn = document.getElementById('lbExportBtn');
+  const lbImportBtn = document.getElementById('lbImportBtn');
+  const lbImportInput = document.getElementById('lbImportInput');
+  const lbAdminRow = document.getElementById('lbAdminRow');
+
+  let playerName = '';
+  let availableLevels = [{ name: 'Facile', imageUrl: '', animation: 'pulse' }];
+  let currentLevel = null;
+  const leaderboard = [];
+
+  // ---------- Connexion à Firebase (classement partagé) ----------
+  // Colle ici la config récupérée dans les paramètres de ton projet Firebase.
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyDr1rRcq5bQhCVQxTG5UTWg1AHlfevmc9Q",
+    authDomain: "cinetoile.firebaseapp.com",
+    projectId: "cinetoile",
+    storageBucket: "cinetoile.firebasestorage.app",
+    messagingSenderId: "318628943510",
+    appId: "1:318628943510:web:f93c5570b1c2c72baed4b7"
+  };
+
+  let db = null;
+  let firebaseReady = false;
+  try {
+    if (typeof firebase !== 'undefined' && FIREBASE_CONFIG.apiKey.indexOf('COLLE_') === -1){
+      firebase.initializeApp(FIREBASE_CONFIG);
+      db = firebase.firestore();
+      firebaseReady = true;
+    }
+  } catch (err){
+    firebaseReady = false;
+  }
+
+  // ---------- Connexion à TMDb (The Movie Database) pour les points communs ----------
+  // Colle ici ta clé API (v3 auth) récupérée dans les paramètres de ton compte TMDb.
+  const TMDB_API_KEY = "0bbbced2ffc04460b113959a8bb46fe4";
+
+  let genreMap = {};
+  let tmdbReady = false;
+
+  async function initTMDb(){
+    if (!TMDB_API_KEY || TMDB_API_KEY.indexOf('COLLE_') !== -1) return;
+    try {
+      const res = await fetch(`https://api.themoviedb.org/3/genre/movie/list?api_key=${TMDB_API_KEY}&language=fr-FR`);
+      const data = await res.json();
+      (data.genres || []).forEach(g => { genreMap[g.id] = g.name; });
+      tmdbReady = true;
+    } catch (err){
+      tmdbReady = false;
+    }
+  }
+
+  async function fetchMovieInfoTMDb(title){
+    if (!tmdbReady) return null;
+    try {
+      const searchRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&language=fr-FR&query=${encodeURIComponent(title)}`);
+      const searchData = await searchRes.json();
+      if (!searchData.results || searchData.results.length === 0) return null;
+
+      const movie = searchData.results[0];
+      const year = movie.release_date ? parseInt(movie.release_date.slice(0, 4), 10) : null;
+      const genres = (movie.genre_ids || []).map(id => genreMap[id]).filter(Boolean);
+      const posterUrl = movie.poster_path ? `https://image.tmdb.org/t/p/w342${movie.poster_path}` : null;
+
+      const creditsRes = await fetch(`https://api.themoviedb.org/3/movie/${movie.id}/credits?api_key=${TMDB_API_KEY}&language=fr-FR`);
+      const credits = await creditsRes.json();
+      const directorObj = (credits.crew || []).find(c => c.job === 'Director');
+      const director = directorObj ? directorObj.name : null;
+      const cast = (credits.cast || []).slice(0, 5).map(c => c.name);
+
+      return { year, genres, director, cast, posterUrl };
+    } catch (err){
+      return null;
+    }
+  }
+
+  // Le film correct ne change pas tant qu'on reste sur la même question :
+  // on met en cache son résultat pour ne pas le rechercher à chaque essai.
+  let cachedAnswerInfo = null;
+  let cachedAnswerKey = null;
+
+  async function getAnswerInfoTMDb(correctAnswer){
+    if (cachedAnswerKey === correctAnswer) return cachedAnswerInfo;
+    cachedAnswerInfo = await fetchMovieInfoTMDb(correctAnswer);
+    cachedAnswerKey = correctAnswer;
+    return cachedAnswerInfo;
+  }
+
+  async function showPoster(correctAnswer){
+    posterBox.classList.add('hidden');
+    if (!tmdbReady) return;
+    const info = await getAnswerInfoTMDb(correctAnswer);
+    if (!info || !info.posterUrl) return;
+    posterImg.src = info.posterUrl;
+    posterImg.alt = `Affiche de ${correctAnswer}`;
+    posterBox.classList.remove('hidden');
+    spawnPosterSparkles();
+  }
+
+  function spawnPosterSparkles(){
+    document.querySelectorAll('.poster-sparkle').forEach(el => el.remove());
+    const positions = [
+      { top: '-8%', left: '6%' },
+      { top: '4%', left: '-10%' },
+      { top: '-10%', left: '68%' },
+      { top: '55%', left: '-12%' },
+      { top: '78%', left: '94%' },
+      { top: '18%', left: '96%' }
+    ];
+    positions.forEach((pos, i) => {
+      const star = document.createElement('span');
+      star.className = 'poster-sparkle';
+      star.textContent = '★';
+      star.style.top = pos.top;
+      star.style.left = pos.left;
+      star.style.animationDelay = (i * 0.09) + 's';
+      posterBox.appendChild(star);
+      setTimeout(() => star.remove(), 1300 + i * 90);
+    });
+  }
+
+  function getCommonPointsTMDb(a, b){
+    const pts = [];
+    if (a.year && b.year){
+      if (a.year === b.year) pts.push(`la même année de sortie (${a.year})`);
+      else if (Math.floor(a.year / 10) === Math.floor(b.year / 10)) pts.push(`la même décennie (années ${Math.floor(a.year / 10) * 10})`);
+    }
+    if (a.director && b.director && a.director === b.director) pts.push(`le même réalisateur : ${a.director}`);
+    if (a.genres && b.genres){
+      const shared = a.genres.filter(g => b.genres.includes(g));
+      if (shared.length) pts.push(`le genre ${shared.join(' / ')}`);
+    }
+    if (a.cast && b.cast){
+      const shared = a.cast.filter(actor => b.cast.includes(actor));
+      if (shared.length) pts.push(`${shared.length > 1 ? 'des acteurs en commun' : 'un acteur en commun'} : ${shared.join(', ')}`);
+    }
+    return pts;
+  }
+
+  // ---------- Niveaux et critiques partagés (Firestore) ----------
+  async function loadLevelsFromCloud(){
+    if (!firebaseReady) return;
+    try {
+      const doc = await db.collection('config').doc('levels').get();
+      if (doc.exists && Array.isArray(doc.data().names) && doc.data().names.length){
+        availableLevels = doc.data().names.map(l =>
+          typeof l === 'string' ? { name: l, imageUrl: '', animation: 'pulse' } : l
+        );
+      }
+    } catch (err){
+      // pas de config trouvée : on garde les niveaux locaux par défaut
+    }
+  }
+
+  async function saveLevelsToCloud(){
+    if (!firebaseReady) return;
+    try {
+      await db.collection('config').doc('levels').set({ names: availableLevels });
+    } catch (err){
+      // échec silencieux : le niveau reste au moins créé localement pour cette session
+    }
+  }
+
+  function findLevel(name){
+    return availableLevels.find(l => l.name === name);
+  }
+
+  async function loadCritiquesFromCloud(){
+    if (!firebaseReady) return false;
+    try {
+      const snapshot = await db.collection('critiques').get();
+      if (snapshot.empty) return false;
+      const loaded = [];
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        loaded.push({
+          id: doc.id,
+          review: d.review,
+          answer: d.answer,
+          aliases: d.aliases || [],
+          level: d.level || 'Facile'
+        });
+      });
+      allQuestions = loaded;
+      return true;
+    } catch (err){
+      return false;
+    }
+  }
+
+  async function addCritiqueToCloud(q){
+    if (!firebaseReady) return null;
+    try {
+      const ref = await db.collection('critiques').add({
+        review: q.review, answer: q.answer, aliases: q.aliases || [], level: q.level
+      });
+      return ref.id;
+    } catch (err){
+      return null;
+    }
+  }
+
+  async function updateCritiqueInCloud(id, q){
+    if (!firebaseReady || !id) return;
+    try {
+      await db.collection('critiques').doc(id).set({
+        review: q.review, answer: q.answer, aliases: q.aliases || [], level: q.level
+      });
+    } catch (err){
+      // échec silencieux : la modif reste au moins visible localement pour cette session
+    }
+  }
+
+  async function deleteCritiqueFromCloud(id){
+    if (!firebaseReady || !id) return;
+    try {
+      await db.collection('critiques').doc(id).delete();
+    } catch (err){
+      // échec silencieux
+    }
+  }
+
+  async function loadLeaderboardFromCloud(highlight){
+    if (!firebaseReady) return;
+    try {
+      const snapshot = await db.collection('scores').get();
+      leaderboard.length = 0;
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        leaderboard.push({
+          key: doc.id,
+          name: d.name,
+          bestScore: d.bestScore,
+          bestTotal: d.bestTotal || 1,
+          gamesPlayed: d.gamesPlayed || 1,
+          lastScore: d.lastScore,
+          lastTotal: d.lastTotal
+        });
+      });
+      renderLeaderboard(highlight);
+    } catch (err){
+      // Pas de connexion ou config pas encore prête : on garde le classement local tel quel.
+    }
+  }
+
+  // Une seule fiche par pseudo (identifiée par son nom normalisé) : chaque partie
+  // met à jour ses stats au lieu de créer une nouvelle ligne dans le classement.
+  async function upsertPlayerStatsCloud(name, score, total){
+    if (!firebaseReady) return null;
+    const key = normalize(name);
+    if (!key) return null;
+    try {
+      const ref = db.collection('scores').doc(key);
+      const doc = await ref.get();
+
+      if (doc.exists){
+        const d = doc.data();
+        const gamesPlayed = (d.gamesPlayed || 0) + 1;
+        const isNewBest = (score / total) > ((d.bestScore || 0) / (d.bestTotal || 1));
+        const updated = {
+          name: name,
+          bestScore: isNewBest ? score : d.bestScore,
+          bestTotal: isNewBest ? total : d.bestTotal,
+          gamesPlayed: gamesPlayed,
+          lastScore: score,
+          lastTotal: total,
+          lastDate: new Date().toISOString()
+        };
+        await ref.set(updated, { merge: true });
+        return { key, ...updated };
+      } else {
+        const created = {
+          name: name,
+          bestScore: score,
+          bestTotal: total,
+          gamesPlayed: 1,
+          lastScore: score,
+          lastTotal: total,
+          lastDate: new Date().toISOString()
+        };
+        await ref.set(created);
+        return { key, ...created };
+      }
+    } catch (err){
+      return null;
+    }
+  }
+
+  // Repli local (si Firebase n'est pas configuré) : même logique, en mémoire.
+  function upsertPlayerStatsLocal(name, score, total){
+    const key = normalize(name);
+    let entry = leaderboard.find(e => e.key === key);
+    if (!entry){
+      entry = { key, name, bestScore: score, bestTotal: total, gamesPlayed: 1, lastScore: score, lastTotal: total };
+      leaderboard.push(entry);
+    } else {
+      entry.gamesPlayed++;
+      entry.lastScore = score;
+      entry.lastTotal = total;
+      entry.name = name;
+      if ((score / total) > (entry.bestScore / entry.bestTotal)){
+        entry.bestScore = score;
+        entry.bestTotal = total;
+      }
+    }
+    return entry;
+  }
+
+  pseudoForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = pseudoInput.value.trim();
+    if (!name) return;
+    playerName = name;
+    startScreen.classList.add('hidden');
+    renderLevelList();
+    levelScreen.classList.remove('hidden');
+  });
+
+  changeLevelBtn.addEventListener('click', () => {
+    gameArea.classList.add('hidden');
+    renderLevelList();
+    levelScreen.classList.remove('hidden');
+  });
+
+  rulesToggleBtn.addEventListener('click', () => {
+    closeRulesBtn.classList.remove('hidden');
+    rulesScreen.classList.remove('hidden');
+    rulesScreen.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  closeRulesBtn.addEventListener('click', () => {
+    rulesScreen.classList.add('hidden');
+  });
+
+  function renderLevelList(){
+    levelList.innerHTML = '';
+    availableLevels.forEach(level => {
+      const count = allQuestions.filter(q => q.level === level.name).length;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'level-btn';
+
+      if (level.imageUrl){
+        const img = document.createElement('img');
+        img.src = level.imageUrl;
+        img.alt = '';
+        img.className = 'level-thumb';
+        btn.appendChild(img);
+      }
+
+      btn.appendChild(document.createTextNode(level.name));
+      const countSpan = document.createElement('span');
+      countSpan.className = 'level-count';
+      countSpan.textContent = `${count} critique${count > 1 ? 's' : ''}`;
+      btn.appendChild(countSpan);
+
+      btn.addEventListener('click', () => {
+        playSelectSound();
+        playLevelAnimation(btn, level.animation || 'pulse');
+        setTimeout(() => selectLevel(level.name), 260);
+      });
+      levelList.appendChild(btn);
+    });
+  }
+
+  function playLevelAnimation(btn, type){
+    const animClass = 'level-anim-' + type;
+    btn.classList.add(animClass);
+    if (type === 'explode') spawnExplodeParticles(btn);
+    setTimeout(() => btn.classList.remove(animClass), 600);
+  }
+
+  function spawnExplodeParticles(btn){
+    const colors = ['var(--pink)', 'var(--cyan)', 'var(--yellow)'];
+    for (let i = 0; i < 10; i++){
+      const p = document.createElement('span');
+      p.className = 'pixel-particle';
+      const angle = (Math.PI * 2 * i) / 10;
+      const dist = 34 + Math.random() * 18;
+      p.style.setProperty('--dx', (Math.cos(angle) * dist) + 'px');
+      p.style.setProperty('--dy', (Math.sin(angle) * dist) + 'px');
+      p.style.left = '50%';
+      p.style.top = '50%';
+      p.style.background = colors[i % colors.length];
+      btn.appendChild(p);
+      setTimeout(() => p.remove(), 550);
+    }
+  }
+
+  function selectLevel(level){
+    currentLevel = level;
+    levelScreen.classList.add('hidden');
+    rulesScreen.classList.add('hidden');
+    gameArea.classList.remove('hidden');
+    rebuildPool();
+    resetQuiz();
+    answerInput.focus();
+  }
+
+  function refreshLevelSelectOptions(){
+    const current = levelSelect.value;
+    levelSelect.innerHTML = '';
+    availableLevels.forEach(level => {
+      const opt = document.createElement('option');
+      opt.value = level.name;
+      opt.textContent = level.name;
+      levelSelect.appendChild(opt);
+    });
+    if (availableLevels.some(l => l.name === current)) levelSelect.value = current;
+  }
+
+  newLevelBtn.addEventListener('click', async () => {
+    const name = window.prompt('Nom du nouveau niveau (ex : Expert) :');
+    if (!name) return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    if (findLevel(trimmed)){
+      refreshLevelSelectOptions();
+      levelSelect.value = trimmed;
+      return;
+    }
+    availableLevels.push({ name: trimmed, imageUrl: '', animation: 'pulse' });
+    refreshLevelSelectOptions();
+    renderLevelManageList();
+    levelSelect.value = trimmed;
+    await saveLevelsToCloud();
+  });
+
+  const ANIMATION_LABELS = {
+    pulse: 'Pulsation néon',
+    spin: 'Rotation arcade',
+    glitch: 'Glitch électrique',
+    wave: 'Onde sonar',
+    explode: 'Explosion pixel'
+  };
+
+  function renderLevelManageList(){
+    levelManageList.innerHTML = '';
+    availableLevels.forEach((level, idx) => {
+      const row = document.createElement('div');
+      row.className = 'custom-item level-manage-row';
+
+      const info = document.createElement('div');
+      info.className = 'level-manage-info';
+
+      const nameField = document.createElement('input');
+      nameField.type = 'text';
+      nameField.placeholder = 'Nom du niveau';
+      nameField.value = level.name;
+      info.appendChild(nameField);
+
+      const imgField = document.createElement('input');
+      imgField.type = 'text';
+      imgField.placeholder = 'URL de l\'image (facultatif)';
+      imgField.value = level.imageUrl || '';
+
+      const animSelect = document.createElement('select');
+      Object.keys(ANIMATION_LABELS).forEach(key => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = ANIMATION_LABELS[key];
+        if ((level.animation || 'pulse') === key) opt.selected = true;
+        animSelect.appendChild(opt);
+      });
+
+      info.appendChild(imgField);
+      info.appendChild(animSelect);
+
+      const actions = document.createElement('div');
+      actions.className = 'item-actions';
+      const saveBtn = document.createElement('button');
+      saveBtn.type = 'button';
+      saveBtn.className = 'icon-btn';
+      saveBtn.textContent = 'ENREGISTRER';
+      saveBtn.addEventListener('click', async () => {
+        const oldName = level.name;
+        const newName = nameField.value.trim();
+
+        if (!newName){
+          nameField.value = oldName;
+          return;
+        }
+        if (newName !== oldName && findLevel(newName)){
+          saveBtn.textContent = 'NOM DEJA PRIS';
+          setTimeout(() => { saveBtn.textContent = 'ENREGISTRER'; }, 1500);
+          return;
+        }
+
+        availableLevels[idx] = {
+          name: newName,
+          imageUrl: imgField.value.trim(),
+          animation: animSelect.value
+        };
+
+        if (newName !== oldName){
+          // Répercute le renommage sur toutes les critiques qui appartenaient à ce niveau.
+          allQuestions.forEach(q => {
+            if (q.level === oldName){
+              q.level = newName;
+              if (q.id) updateCritiqueInCloud(q.id, q);
+            }
+          });
+          if (currentLevel === oldName) currentLevel = newName;
+        }
+
+        renderLevelList();
+        renderCustomList();
+        refreshLevelSelectOptions();
+        await saveLevelsToCloud();
+        saveBtn.textContent = 'OK ✓';
+        setTimeout(() => { saveBtn.textContent = 'ENREGISTRER'; }, 1200);
+      });
+      actions.appendChild(saveBtn);
+
+      row.appendChild(info);
+      row.appendChild(actions);
+      levelManageList.appendChild(row);
+    });
+  }
+
+  function renderLeaderboard(highlight){
+    const sorted = leaderboard.slice().sort((a, b) =>
+      (b.bestScore / b.bestTotal) - (a.bestScore / a.bestTotal) || b.bestScore - a.bestScore
+    );
+    leaderboardList.innerHTML = '';
+
+    if (sorted.length === 0){
+      leaderboardList.innerHTML = '<p class="empty-note">Personne n\'a encore joué.</p>';
+      return;
+    }
+
+    const isMine = (entry) => highlight && entry.key === highlight.key;
+
+    sorted.forEach((entry, idx) => {
+      const row = document.createElement('div');
+      row.className = 'leaderboard-item';
+      if (isMine(entry)) row.classList.add('my-entry');
+      const left = document.createElement('span');
+      left.textContent = `#${idx + 1} ${entry.name}`;
+      const right = document.createElement('span');
+      right.textContent = `${entry.bestScore} / ${entry.bestTotal}`;
+      row.appendChild(left);
+      row.appendChild(right);
+      leaderboardList.appendChild(row);
+    });
+
+    if (highlight){
+      const rank = sorted.findIndex(isMine) + 1;
+      if (rank > 0) rankLine.textContent = `TU ES CLASSE #${rank} SUR ${sorted.length} !`;
+      statsLine.textContent =
+        `Meilleur score : ${highlight.bestScore} / ${highlight.bestTotal} — ` +
+        `Dernier essai : ${highlight.lastScore} / ${highlight.lastTotal} — ` +
+        `${highlight.gamesPlayed} partie${highlight.gamesPlayed > 1 ? 's' : ''} jouée${highlight.gamesPlayed > 1 ? 's' : ''}`;
+    }
+  }
+
+  function renderAdminLeaderboard(highlightKey){
+    const sorted = leaderboard.slice().sort((a, b) =>
+      (b.bestScore / b.bestTotal) - (a.bestScore / a.bestTotal) || b.bestScore - a.bestScore
+    );
+    adminLeaderboardList.innerHTML = '';
+
+    if (highlightKey){
+      const mine = sorted.find(e => e.key === highlightKey);
+      if (mine){
+        const rank = sorted.indexOf(mine) + 1;
+        myStatsSummary.textContent =
+          `TOI (${mine.name}) : #${rank} sur ${sorted.length} — Meilleur score : ${mine.bestScore} / ${mine.bestTotal} — ` +
+          `${mine.gamesPlayed} partie${mine.gamesPlayed > 1 ? 's' : ''} jouée${mine.gamesPlayed > 1 ? 's' : ''}`;
+      } else {
+        myStatsSummary.textContent = "Tu n'as pas encore de partie enregistrée sous ce pseudo — joue une partie pour apparaître ici !";
+      }
+    } else {
+      myStatsSummary.textContent = '';
+    }
+
+    if (sorted.length === 0){
+      adminLeaderboardList.innerHTML = '<p class="empty-note">Personne n\'a encore joué.</p>';
+      return;
+    }
+
+    sorted.forEach((entry, idx) => {
+      const row = document.createElement('div');
+      row.className = 'leaderboard-item';
+      if (highlightKey && entry.key === highlightKey) row.classList.add('my-entry');
+      const left = document.createElement('span');
+      left.textContent = `#${idx + 1} ${entry.name}`;
+      const right = document.createElement('span');
+      right.textContent = `${entry.bestScore} / ${entry.bestTotal} (${entry.gamesPlayed} partie${entry.gamesPlayed > 1 ? 's' : ''})`;
+      row.appendChild(left);
+      row.appendChild(right);
+      adminLeaderboardList.appendChild(row);
+    });
+  }
+
+  viewLeaderboardBtn.addEventListener('click', async () => {
+    renderAdminLeaderboard();
+    leaderboardPanel.classList.remove('hidden');
+    leaderboardPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    await loadLeaderboardFromCloud();
+    renderAdminLeaderboard();
+  });
+
+  myStatsBtn.addEventListener('click', async () => {
+    const myKey = normalize(playerName || '');
+    renderAdminLeaderboard(myKey);
+    leaderboardPanel.classList.remove('hidden');
+    leaderboardPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    await loadLeaderboardFromCloud();
+    renderAdminLeaderboard(myKey);
+  });
+
+  closeLeaderboardBtn.addEventListener('click', () => {
+    leaderboardPanel.classList.add('hidden');
+  });
+
+  lbExportBtn.addEventListener('click', () => {
+    if (leaderboard.length === 0) return;
+    const blob = new Blob([JSON.stringify(leaderboard, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'cinetoile-classement.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  lbImportBtn.addEventListener('click', () => lbImportInput.click());
+
+  lbImportInput.addEventListener('change', () => {
+    const file = lbImportInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        if (!Array.isArray(data)) throw new Error('format');
+        const valid = data.every(e =>
+          e && typeof e.name === 'string' &&
+          typeof e.bestScore === 'number' && typeof e.bestTotal === 'number'
+        );
+        if (!valid) throw new Error('format');
+        data.forEach(e => leaderboard.push({
+          key: e.key || normalize(e.name),
+          name: e.name,
+          bestScore: e.bestScore,
+          bestTotal: e.bestTotal,
+          gamesPlayed: e.gamesPlayed || 1,
+          lastScore: e.lastScore != null ? e.lastScore : e.bestScore,
+          lastTotal: e.lastTotal != null ? e.lastTotal : e.bestTotal
+        }));
+        renderLeaderboard();
+      } catch (err){
+        // fichier invalide : on ignore silencieusement pour ne pas casser l'écran de résultat
+      }
+    };
+    reader.readAsText(file);
+    lbImportInput.value = '';
+  });
+
+  // ---------- Moteur audio 8-bit (généré en direct, aucun fichier importé) ----------
+  const musicToggle = document.getElementById('musicToggle');
+
+  const NOTES = {
+    G2:98.00, A2:110.00,
+    C3:130.81, D3:146.83, E3:164.81, F3:174.61, G3:196.00, A3:220.00, B3:246.94,
+    C4:261.63, D4:293.66, E4:329.63, F4:349.23, G4:392.00, A4:440.00, B4:493.88,
+    C5:523.25, D5:587.33, E5:659.25, F5:698.46, G5:783.99, A5:880.00
+  };
+  // Composition originale (mineure, ostinato grave et répétitif) — ambiance
+  // sombre et mécanique façon thriller sci-fi, sans reprendre de mélodie existante.
+  const LEAD = ['A3','A3','C4','A3','A3','A3','E4','A3','G3','G3','A3','G3','G3','G3','D4','G3'];
+  const BASS = ['A2','A2','G2','A2'];
+  const STEP = 0.2;
+
+  let audioCtx = null;
+  let masterGain = null;
+  let musicGain = null;
+  let musicEnabled = false;
+  let musicTimer = null;
+
+  function initAudio(){
+    if (audioCtx) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    audioCtx = new AC();
+    // Bus effets sonores : volume fixe, jamais coupé par le bouton musique.
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0.15;
+    masterGain.connect(audioCtx.destination);
+    // Bus musique : c'est celui-ci que le bouton musique allume/coupe.
+    musicGain = audioCtx.createGain();
+    musicGain.gain.value = 0;
+    musicGain.connect(audioCtx.destination);
+  }
+
+  function playTone(freq, time, duration, type, gainValue, bus){
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, time);
+    g.gain.setValueAtTime(0, time);
+    g.gain.linearRampToValueAtTime(gainValue, time + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+    osc.connect(g);
+    g.connect(bus || masterGain);
+    osc.start(time);
+    osc.stop(time + duration + 0.02);
+  }
+
+  function scheduleMusicLoop(){
+    if (!musicEnabled || !audioCtx) return;
+    const startTime = audioCtx.currentTime + 0.05;
+
+    LEAD.forEach((note, i) => {
+      if (note) playTone(NOTES[note], startTime + i * STEP, STEP * 0.9, 'square', 0.05, musicGain);
+    });
+    BASS.forEach((note, i) => {
+      if (note) playTone(NOTES[note], startTime + i * STEP * 4, STEP * 4 * 0.9, 'triangle', 0.07, musicGain);
+    });
+
+    const loopDuration = LEAD.length * STEP;
+    musicTimer = setTimeout(scheduleMusicLoop, loopDuration * 1000);
+  }
+
+  function startMusic(){
+    initAudio();
+    if (!audioCtx) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    musicEnabled = true;
+    const now = audioCtx.currentTime;
+    musicGain.gain.cancelScheduledValues(now);
+    musicGain.gain.setValueAtTime(musicGain.gain.value, now);
+    musicGain.gain.linearRampToValueAtTime(0.15, now + 0.03);
+    scheduleMusicLoop();
+  }
+
+  function stopMusic(){
+    musicEnabled = false;
+    if (musicTimer) clearTimeout(musicTimer);
+    if (musicGain && audioCtx){
+      const now = audioCtx.currentTime;
+      musicGain.gain.cancelScheduledValues(now);
+      musicGain.gain.setValueAtTime(musicGain.gain.value, now);
+      musicGain.gain.linearRampToValueAtTime(0.0001, now + 0.03);
+    }
+  }
+
+  musicToggle.addEventListener('click', () => {
+    if (musicEnabled){
+      stopMusic();
+      musicToggle.textContent = '🔇 MUSIQUE';
+      musicToggle.classList.remove('playing');
+    } else {
+      startMusic();
+      musicToggle.textContent = '🔊 MUSIQUE';
+      musicToggle.classList.add('playing');
+    }
+  });
+
+  function playCorrectSound(){
+    initAudio();
+    if (!audioCtx) return;
+    const t = audioCtx.currentTime;
+    playTone(523.25, t, 0.1, 'square', 0.1);
+    playTone(659.25, t + 0.1, 0.1, 'square', 0.1);
+    playTone(783.99, t + 0.2, 0.16, 'square', 0.1);
+  }
+
+  function playWrongSound(){
+    initAudio();
+    if (!audioCtx) return;
+    const t = audioCtx.currentTime;
+    playTone(196.00, t, 0.18, 'square', 0.1);
+    playTone(146.83, t + 0.14, 0.24, 'square', 0.1);
+  }
+
+  function playSelectSound(){
+    initAudio();
+    if (!audioCtx) return;
+    const t = audioCtx.currentTime;
+    playTone(440.00, t, 0.07, 'square', 0.09);
+    playTone(659.25, t + 0.06, 0.1, 'square', 0.09);
+  }
+
+
+  const editorToggle = document.getElementById('editorToggle');
+  const editorPanel = document.getElementById('editorPanel');
+  const reviewForm = document.getElementById('reviewForm');
+  const reviewInput = document.getElementById('reviewInput');
+  const answerField = document.getElementById('answerField');
+  const aliasesField = document.getElementById('aliasesField');
+  const submitBtn = document.getElementById('submitBtn');
+  const cancelEditBtn = document.getElementById('cancelEditBtn');
+  const formMsg = document.getElementById('formMsg');
+  const customListBody = document.getElementById('customListBody');
+  const exportBtn = document.getElementById('exportBtn');
+  const importBtn = document.getElementById('importBtn');
+  const importInput = document.getElementById('importInput');
+  const resetBtn = document.getElementById('resetBtn');
+
+  function updateWalker(){
+    const total = QUESTIONS.length || 1;
+    const pct = Math.min(score / total, 1);
+    const travel = 82; // % de la piste laissée disponible avant la salle
+    walker.style.left = (pct * travel) + '%';
+    walker.classList.toggle('arrived', pct >= 1);
+    walkCaption.textContent = pct >= 1
+      ? 'Il est arrivé à la séance !'
+      : `${score} / ${total} vers la salle`;
+  }
+
+  function rebuildPool(){
+    QUESTIONS = currentLevel
+      ? allQuestions.filter(q => q.level === currentLevel)
+      : allQuestions;
+  }
+
+  function initFilmstrip(){
+    filmstrip.innerHTML = '';
+    QUESTIONS.forEach((_, i) => {
+      const f = document.createElement('div');
+      f.className = 'frame';
+      f.id = 'frame-' + i;
+      filmstrip.appendChild(f);
+    });
+  }
+
+  function normalize(str){
+    return str
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/^(le |la |les |l'|l’)/, '')
+      .replace(/[^a-z0-9 ]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  // Distance de Levenshtein : nombre minimal de modifications (ajout, suppression,
+  // substitution d'un caractère) pour passer d'une chaîne à l'autre.
+  function levenshtein(a, b){
+    const m = a.length, n = b.length;
+    if (m === 0) return n;
+    if (n === 0) return m;
+    const prev = new Array(n + 1);
+    const curr = new Array(n + 1);
+    for (let j = 0; j <= n; j++) prev[j] = j;
+    for (let i = 1; i <= m; i++){
+      curr[0] = i;
+      for (let j = 1; j <= n; j++){
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        curr[j] = Math.min(
+          prev[j] + 1,      // suppression
+          curr[j - 1] + 1,  // ajout
+          prev[j - 1] + cost // substitution
+        );
+      }
+      for (let j = 0; j <= n; j++) prev[j] = curr[j];
+    }
+    return prev[n];
+  }
+
+  // Accepte une réponse si elle est identique, OU suffisamment proche pour être
+  // une simple faute de frappe (le seuil grandit avec la longueur du titre, mais
+  // reste strict sur les titres très courts pour éviter les faux positifs).
+  function isCloseEnough(guessNorm, targetNorm){
+    if (!guessNorm || !targetNorm) return false;
+    if (guessNorm === targetNorm) return true;
+
+    const maxLen = Math.max(guessNorm.length, targetNorm.length);
+    if (maxLen <= 3) return false; // titres/mots trop courts : exactitude requise
+
+    // Si l'un des deux commence exactement par l'autre suivi d'un morceau de texte
+    // supplémentaire (ex: "inception 2" pour "inception"), on refuse : il s'agit
+    // probablement d'un autre film (une suite) et pas d'une simple faute de frappe.
+    const shorter = guessNorm.length <= targetNorm.length ? guessNorm : targetNorm;
+    const longer = guessNorm.length <= targetNorm.length ? targetNorm : guessNorm;
+    if (longer.startsWith(shorter) && longer.slice(shorter.length).trim().length > 0){
+      return false;
+    }
+
+    const threshold = Math.max(1, Math.floor(maxLen * 0.22));
+    return levenshtein(guessNorm, targetNorm) <= threshold;
+  }
+
+  // Vérifie la réponse du joueur face au titre correct ET à ses alias éventuels
+  // (abréviations connues, titre original, etc.), chacun avec la même tolérance.
+  function isGuessCorrect(guess, question){
+    const guessNorm = normalize(guess);
+    const targets = [question.answer, ...(question.aliases || [])];
+    return targets.some(t => isCloseEnough(guessNorm, normalize(t)));
+  }
+
+  function updateHearts(){
+    heartEls.forEach((el, i) => {
+      if (!el) return;
+      el.classList.toggle('lost', i >= attemptsLeft);
+    });
+  }
+
+  function renderQuestion(){
+    if (QUESTIONS.length === 0){
+      qCounter.textContent = `QUESTION 0 / 0`;
+      reviewText.textContent = "Ce niveau ne contient encore aucune critique. Demande à l'admin d'en ajouter via « Gérer mes critiques », ou change de niveau.";
+      answerForm.style.display = 'none';
+      feedbackEl.textContent = '';
+      commonPointsEl.innerHTML = '';
+      posterBox.classList.add('hidden');
+      nextBtn.style.display = 'none';
+      return;
+    }
+    answerForm.style.display = '';
+    posterBox.classList.add('hidden');
+
+    const q = QUESTIONS[current];
+    qCounter.textContent = `QUESTION ${current + 1} / ${QUESTIONS.length}`;
+    reviewText.textContent = q.review;
+    feedbackEl.textContent = '';
+    feedbackEl.className = 'feedback';
+    commonPointsEl.innerHTML = '';
+    nextBtn.style.display = 'none';
+    nextBtn.textContent = 'SUIVANT →';
+
+    attemptsLeft = MAX_ATTEMPTS;
+    currentGuesses = [];
+    questionAnswered = false;
+    cachedAnswerKey = null;
+    cachedAnswerInfo = null;
+    updateHearts();
+
+    answerInput.value = '';
+    answerInput.disabled = false;
+    answerInput.className = 'answer-input';
+    answerSubmitBtn.disabled = false;
+    answerInput.focus();
+
+    document.querySelectorAll('.frame').forEach(f => f.classList.remove('current'));
+    const curFrame = document.getElementById('frame-' + current);
+    if (curFrame) curFrame.classList.add('current');
+  }
+
+  function finishQuestion(solved){
+    history[current] = {
+      review: QUESTIONS[current].review,
+      correctAnswer: QUESTIONS[current].answer,
+      guesses: currentGuesses.slice(),
+      solved: solved
+    };
+  }
+
+  async function showCommonPointsHint(guess, correctAnswer, attemptNumber){
+    const block = document.createElement('div');
+    block.className = 'common-points-entry';
+    const title = document.createElement('p');
+    title.textContent = `Essai ${attemptNumber} — recherche des informations sur « ${guess} »...`;
+    block.appendChild(title);
+    commonPointsEl.appendChild(block);
+
+    let pts = null;
+
+    if (tmdbReady){
+      const [guessInfo, answerInfo] = await Promise.all([
+        fetchMovieInfoTMDb(guess),
+        getAnswerInfoTMDb(correctAnswer)
+      ]);
+      if (guessInfo && answerInfo){
+        pts = getCommonPointsTMDb(guessInfo, answerInfo);
+      }
+    }
+
+    if (pts === null){
+      // Repli sur la petite base locale si TMDb n'est pas configuré, indisponible,
+      // ou si l'un des deux titres n'a pas été trouvé.
+      const localAnswer = MOVIE_DB[normalize(correctAnswer)];
+      const localGuess = MOVIE_DB[normalize(guess)];
+      if (localAnswer && localGuess){
+        pts = getCommonPoints(localGuess, localAnswer);
+      }
+    }
+
+    if (pts === null){
+      title.textContent = `Essai ${attemptNumber} — « ${guess} » : film introuvable, impossible de comparer.`;
+      return;
+    }
+
+    if (pts.length){
+      title.textContent = `Essai ${attemptNumber} — « ${guess} » a en commun avec le bon film :`;
+      const ul = document.createElement('ul');
+      pts.forEach(pt => {
+        const li = document.createElement('li');
+        li.textContent = pt;
+        ul.appendChild(li);
+      });
+      block.appendChild(ul);
+    } else {
+      title.textContent = `Essai ${attemptNumber} — « ${guess} » n'a rien en commun avec le bon film.`;
+    }
+  }
+
+  function checkAnswer(){
+    if (questionAnswered || QUESTIONS.length === 0) return;
+
+    const q = QUESTIONS[current];
+    const guess = answerInput.value.trim();
+    if (!guess) return;
+
+    const isCorrect = isGuessCorrect(guess, q);
+    const frame = document.getElementById('frame-' + current);
+
+    currentGuesses.push({ text: guess, correct: isCorrect });
+
+    if (isCorrect){
+      questionAnswered = true;
+      answerInput.disabled = true;
+      answerSubmitBtn.disabled = true;
+      answerInput.className = 'answer-input correct';
+      feedbackEl.textContent = 'BONNE PIOCHE ! LE CRITIQUE N\'A CONVAINCU PERSONNE.';
+      feedbackEl.className = 'feedback correct';
+      score++;
+      if (frame) frame.classList.add('answered-correct');
+      updateWalker();
+      finishQuestion(true);
+      nextBtn.style.display = 'inline-block';
+      playCorrectSound();
+      showPoster(q.answer);
+    } else {
+      attemptsLeft = Math.max(0, attemptsLeft - 1);
+      updateHearts();
+      showCommonPointsHint(guess, q.answer, currentGuesses.length);
+      playWrongSound();
+
+      if (attemptsLeft > 0){
+        feedbackEl.textContent = `RATE — IL TE RESTE ${attemptsLeft} ESSAI${attemptsLeft > 1 ? 'S' : ''}.`;
+        feedbackEl.className = 'feedback wrong';
+        answerInput.value = '';
+        answerInput.className = 'answer-input wrong';
+        answerInput.focus();
+        nextBtn.style.display = 'none';
+      } else {
+        questionAnswered = true;
+        gameOver = true;
+        answerInput.disabled = true;
+        answerSubmitBtn.disabled = true;
+        answerInput.className = 'answer-input wrong';
+        feedbackEl.textContent = `RATE — C'ETAIT "${q.answer}". PLUS D'ESSAIS, PARTIE TERMINEE.`;
+        feedbackEl.className = 'feedback wrong';
+        if (frame) frame.classList.add('answered-wrong');
+        finishQuestion(false);
+        nextBtn.textContent = 'VOIR LE RESULTAT →';
+        nextBtn.style.display = 'inline-block';
+      }
+    }
+  }
+
+  function nextQuestion(){
+    if (gameOver){
+      showResult();
+      return;
+    }
+    current++;
+    if (current < QUESTIONS.length){
+      renderQuestion();
+    } else {
+      showResult();
+    }
+  }
+
+  function showResult(){
+    quizCard.classList.add('hidden');
+    resultCard.classList.remove('hidden');
+
+    let level = LEVELS[0];
+    for (const l of LEVELS){ if (score >= l.min) level = l; }
+
+    const starsEl = document.getElementById('resultStars');
+    starsEl.innerHTML = '';
+    for (let i = 0; i < 5; i++){
+      const span = document.createElement('span');
+      span.textContent = '★';
+      if (i < level.stars) span.classList.add('lit');
+      starsEl.appendChild(span);
+    }
+
+    document.getElementById('resultHeader').textContent = gameOver ? 'PERDU' : 'RECAP';
+    document.getElementById('resultLevel').textContent = level.name;
+    document.getElementById('resultScore').textContent = gameOver
+      ? `PARTIE TERMINEE — ${score} / ${current + 1} FILMS DEVINES AVANT L'ECHEC`
+      : `${score} / ${QUESTIONS.length} FILMS DEVINES`;
+
+    const name = playerName || 'ANONYME';
+    const localEntry = upsertPlayerStatsLocal(name, score, QUESTIONS.length);
+    renderLeaderboard(localEntry);
+
+    upsertPlayerStatsCloud(name, score, QUESTIONS.length).then(cloudEntry => {
+      if (cloudEntry) loadLeaderboardFromCloud(cloudEntry);
+    });
+
+    renderFinalSummary();
+  }
+
+  function renderFinalSummary(){
+    finalSummaryEl.innerHTML = '';
+    history.forEach((h, idx) => {
+      if (!h) return;
+      const block = document.createElement('div');
+      block.className = 'summary-item';
+
+      const qTitle = document.createElement('p');
+      qTitle.className = 'summary-question';
+      qTitle.textContent = `Question ${idx + 1} : « ${h.review} »`;
+      block.appendChild(qTitle);
+
+      h.guesses.forEach((g, i) => {
+        const p = document.createElement('p');
+        p.className = g.correct ? 'guess-correct' : 'guess-wrong';
+        p.textContent = `Essai ${i + 1} : ${g.correct ? '✅' : '❌'} ${g.text}`;
+        block.appendChild(p);
+      });
+
+      const answerP = document.createElement('p');
+      answerP.className = 'guess-answer';
+      answerP.textContent = h.solved
+        ? `Trouvé ! La réponse était "${h.correctAnswer}".`
+        : `Pas trouvé — la réponse était "${h.correctAnswer}".`;
+      block.appendChild(answerP);
+
+      finalSummaryEl.appendChild(block);
+    });
+  }
+
+  function resetQuiz(){
+    current = 0;
+    score = 0;
+    gameOver = false;
+    history.length = 0;
+    resultCard.classList.add('hidden');
+    quizCard.classList.remove('hidden');
+    initFilmstrip();
+    renderQuestion();
+    updateWalker();
+  }
+
+  nextBtn.addEventListener('click', nextQuestion);
+  replayBtn.addEventListener('click', resetQuiz);
+  answerForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    checkAnswer();
+  });
+
+  editorToggle.addEventListener('click', () => {
+    editorPanel.classList.toggle('hidden');
+  });
+
+  // Le bouton de gestion des critiques n'est visible qu'après avoir :
+  // 1) ouvert le site avec ?admin=1 dans l'URL
+  // 2) saisi le bon mot de passe (vérifié via son empreinte SHA-256, jamais stocké en clair)
+  const ADMIN_PASSWORD_HASH = 'fbecbe2a243e4c7f66fc12cc84e3767b8f0f0b957493ce45ee08503328e56717';
+  const adminGate = document.getElementById('adminGate');
+  const adminPasswordForm = document.getElementById('adminPasswordForm');
+  const adminPasswordInput = document.getElementById('adminPasswordInput');
+  const adminGateMsg = document.getElementById('adminGateMsg');
+
+  editorToggle.style.display = 'none';
+  viewLeaderboardBtn.style.display = 'none';
+
+  const isAdmin = new URLSearchParams(window.location.search).get('admin') === '1';
+  if (isAdmin){
+    adminGate.classList.remove('hidden');
+    adminPasswordInput.focus();
+  }
+
+  async function sha256Hex(text){
+    const data = new TextEncoder().encode(text);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  adminPasswordForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    if (!window.crypto || !window.crypto.subtle){
+      adminGateMsg.textContent = 'Cette vérification nécessite HTTPS (fonctionne sur Netlify, pas en fichier local).';
+      return;
+    }
+
+    const hash = await sha256Hex(adminPasswordInput.value);
+    if (hash === ADMIN_PASSWORD_HASH){
+      editorToggle.style.display = '';
+      viewLeaderboardBtn.style.display = '';
+      lbAdminRow.classList.remove('hidden');
+      adminGate.classList.add('hidden');
+    } else {
+      adminGateMsg.textContent = 'Mot de passe incorrect.';
+      adminPasswordInput.value = '';
+      adminPasswordInput.focus();
+    }
+  });
+
+  function clearForm(){
+    reviewInput.value = '';
+    answerField.value = '';
+    aliasesField.value = '';
+    editingIndex = null;
+    submitBtn.textContent = 'AJOUTER';
+    cancelEditBtn.classList.add('hidden');
+    formMsg.textContent = '';
+    formMsg.className = 'editor-form-msg';
+  }
+
+  cancelEditBtn.addEventListener('click', clearForm);
+
+  reviewForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const review = reviewInput.value.trim();
+    const answer = answerField.value.trim();
+    const aliases = aliasesField.value
+      .split(',')
+      .map(a => a.trim())
+      .filter(a => a.length > 0);
+    const level = levelSelect.value || (availableLevels[0] && availableLevels[0].name) || 'Facile';
+
+    if (!review){
+      formMsg.textContent = 'La critique ne peut pas être vide.';
+      formMsg.className = 'editor-form-msg';
+      return;
+    }
+    if (!answer){
+      formMsg.textContent = 'Le titre du film ne peut pas être vide.';
+      formMsg.className = 'editor-form-msg';
+      return;
+    }
+
+    const newQuestion = { review, answer, aliases, level };
+
+    if (editingIndex !== null){
+      const existingId = allQuestions[editingIndex].id;
+      newQuestion.id = existingId;
+      allQuestions[editingIndex] = newQuestion;
+      formMsg.textContent = 'Critique modifiée. Le quiz redémarre avec la liste à jour.';
+      if (existingId){
+        updateCritiqueInCloud(existingId, newQuestion);
+      } else {
+        addCritiqueToCloud(newQuestion).then(id => { if (id) newQuestion.id = id; });
+      }
+    } else {
+      allQuestions.push(newQuestion);
+      formMsg.textContent = 'Critique ajoutée. Le quiz redémarre avec la liste à jour.';
+      addCritiqueToCloud(newQuestion).then(id => { if (id) newQuestion.id = id; });
+    }
+    formMsg.classList.add('ok');
+
+    clearForm();
+    renderCustomList();
+    renderLevelList();
+    rebuildPool();
+    resetQuiz();
+  });
+
+  let expandedLevels = {};
+
+  function renderCustomList(){
+    customListBody.innerHTML = '';
+    if (allQuestions.length === 0){
+      customListBody.innerHTML = '<p class="empty-note">Plus aucune critique — ajoutes-en une.</p>';
+      return;
+    }
+
+    const groups = {};
+    allQuestions.forEach((q, idx) => {
+      const lvl = q.level || 'Facile';
+      if (!groups[lvl]) groups[lvl] = [];
+      groups[lvl].push(idx);
+    });
+
+    const levelOrder = availableLevels.map(l => l.name).filter(name => groups[name]);
+    Object.keys(groups).forEach(name => { if (!levelOrder.includes(name)) levelOrder.push(name); });
+
+    levelOrder.forEach(levelName => {
+      const indices = groups[levelName];
+      const isOpen = !!expandedLevels[levelName];
+
+      const groupHeader = document.createElement('button');
+      groupHeader.type = 'button';
+      groupHeader.className = 'level-group-header';
+      groupHeader.textContent = `${isOpen ? '▾' : '▸'} ${levelName} (${indices.length})`;
+      groupHeader.addEventListener('click', () => {
+        expandedLevels[levelName] = !expandedLevels[levelName];
+        renderCustomList();
+      });
+      customListBody.appendChild(groupHeader);
+
+      if (!isOpen) return;
+
+      const groupBody = document.createElement('div');
+      groupBody.className = 'level-group-body';
+
+      indices.forEach(idx => {
+        const q = allQuestions[idx];
+        const item = document.createElement('div');
+        item.className = 'custom-item';
+
+        const p = document.createElement('p');
+        const aliasText = (q.aliases && q.aliases.length) ? ` (alias : ${q.aliases.join(', ')})` : '';
+        p.textContent = `« ${q.review} » — Réponse : ${q.answer}${aliasText}`;
+
+        const actions = document.createElement('div');
+        actions.className = 'item-actions';
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'icon-btn';
+        editBtn.type = 'button';
+        editBtn.textContent = 'MODIF.';
+        editBtn.addEventListener('click', () => loadIntoForm(idx));
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'icon-btn danger';
+        delBtn.type = 'button';
+        delBtn.textContent = 'SUPPR.';
+        delBtn.addEventListener('click', () => {
+          const removed = allQuestions[idx];
+          allQuestions.splice(idx, 1);
+          if (removed.id) deleteCritiqueFromCloud(removed.id);
+          if (editingIndex === idx) clearForm();
+          renderCustomList();
+          renderLevelList();
+          rebuildPool();
+          resetQuiz();
+        });
+
+        actions.appendChild(editBtn);
+        actions.appendChild(delBtn);
+        item.appendChild(p);
+        item.appendChild(actions);
+        groupBody.appendChild(item);
+      });
+
+      customListBody.appendChild(groupBody);
+    });
+  }
+
+  function loadIntoForm(idx){
+    const q = allQuestions[idx];
+    reviewInput.value = q.review;
+    answerField.value = q.answer;
+    aliasesField.value = (q.aliases || []).join(', ');
+    refreshLevelSelectOptions();
+    levelSelect.value = q.level || 'Facile';
+    editingIndex = idx;
+    submitBtn.textContent = 'ENREGISTRER';
+    cancelEditBtn.classList.remove('hidden');
+    formMsg.textContent = '';
+    editorPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  exportBtn.addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify(allQuestions, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'critiques.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  importBtn.addEventListener('click', () => importInput.click());
+
+  importInput.addEventListener('change', () => {
+    const file = importInput.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        if (!Array.isArray(data)) throw new Error('format');
+
+        const valid = data.every(q =>
+          q && typeof q.review === 'string' && q.review.trim() &&
+          typeof q.answer === 'string' && q.answer.trim()
+        );
+        if (!valid) throw new Error('format');
+
+        const normalized = data.map(q => ({
+          review: q.review,
+          answer: q.answer,
+          aliases: q.aliases || [],
+          level: q.level || 'Facile'
+        }));
+
+        normalized.forEach(q => {
+          if (!findLevel(q.level)) availableLevels.push({ name: q.level, imageUrl: '', animation: 'pulse' });
+          allQuestions.push(q);
+          addCritiqueToCloud(q).then(id => { if (id) q.id = id; });
+        });
+        saveLevelsToCloud();
+
+        renderCustomList();
+        renderLevelList();
+        renderLevelManageList();
+        refreshLevelSelectOptions();
+        rebuildPool();
+        resetQuiz();
+        formMsg.textContent = `${normalized.length} critique(s) importée(s) avec succès.`;
+        formMsg.className = 'editor-form-msg ok';
+      } catch (err){
+        formMsg.textContent = "Le fichier n'est pas dans le bon format.";
+        formMsg.className = 'editor-form-msg';
+      }
+    };
+    reader.readAsText(file);
+    importInput.value = '';
+  });
+
+  resetBtn.addEventListener('click', () => {
+    allQuestions = BASE_QUESTIONS.map(q => ({ review: q.review, answer: q.answer, aliases: (q.aliases || []).slice(), level: q.level || 'Facile' }));
+    clearForm();
+    renderCustomList();
+    renderLevelList();
+    refreshLevelSelectOptions();
+    rebuildPool();
+    resetQuiz();
+    formMsg.textContent = 'Les 12 critiques d\'origine ont été restaurées localement (ça ne supprime pas ce qui est déjà partagé sur le cloud).';
+    formMsg.className = 'editor-form-msg ok';
+  });
+
+  async function initApp(){
+    await loadLevelsFromCloud();
+    const cloudLoaded = await loadCritiquesFromCloud();
+
+    if (!cloudLoaded){
+      // Pas de critiques dans Firestore : on tente critiques.json, sinon on garde
+      // les 12 critiques par défaut (déjà en place dans allQuestions).
+      try {
+        const res = await fetch('critiques.json', { cache: 'no-store' });
+        if (res.ok){
+          const data = await res.json();
+          const valid = Array.isArray(data) && data.length > 0 && data.every(q =>
+            q && typeof q.review === 'string' && q.review.trim() &&
+            typeof q.answer === 'string' && q.answer.trim()
+          );
+          if (valid){
+            allQuestions = data.map(q => ({ review: q.review, answer: q.answer, aliases: (q.aliases || []).slice(), level: q.level || 'Facile' }));
+          }
+        }
+      } catch (err){
+        // Pas de critiques.json trouvé non plus : on garde les 12 critiques par défaut.
+      }
+    }
+
+    // S'assure que tous les niveaux réellement utilisés par les critiques existent bien
+    // dans la liste des niveaux (utile si Firestore contient des niveaux non déclarés).
+    allQuestions.forEach(q => {
+      if (q.level && !findLevel(q.level)) availableLevels.push({ name: q.level, imageUrl: '', animation: 'pulse' });
+    });
+
+    await initTMDb();
+
+    rebuildPool();
+    initFilmstrip();
+    renderQuestion();
+    renderCustomList();
+    refreshLevelSelectOptions();
+    renderLevelManageList();
+    updateWalker();
+    updateHearts();
+    renderLeaderboard();
+    loadLeaderboardFromCloud();
+    pseudoInput.focus();
+  }
+
+  initApp();
+</script>
+</body>
+</html>
