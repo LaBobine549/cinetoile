@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cinétoile — Devinez le film</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Anton&family=Orbitron:wght@700;900&family=Rajdhani:wght@700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg: #0b0316;
@@ -35,7 +35,7 @@
       repeating-linear-gradient(90deg, rgba(var(--cyan-rgb),.05) 0 1px, transparent 1px 42px),
       radial-gradient(ellipse at 50% 0%, #23103f 0%, var(--bg) 55%, var(--bg-deep) 100%);
     background-attachment: fixed;
-    animation: bg-drift 30s linear infinite, bg-glow 9s ease-in-out infinite;
+    animation: bg-drift 30s linear infinite;
     color: var(--text);
     font-family: 'VT323', monospace;
     font-size: 1.2rem;
@@ -44,10 +44,6 @@
   @keyframes bg-drift{
     0%{ background-position: 0 0, 0 0, 0 0; }
     100%{ background-position: 0 420px, 420px 0, 0 0; }
-  }
-  @keyframes bg-glow{
-    0%, 100%{ filter: brightness(1) saturate(1); }
-    50%{ filter: brightness(1.06) saturate(1.15); }
   }
   @media (prefers-reduced-motion: reduce){
     html,body{ animation: none; }
@@ -126,6 +122,55 @@
 
   @media (prefers-reduced-motion: reduce){
     .tv-overlay{ display: none; }
+  }
+
+  /* ---------- Ambiance flammes (thème Enfer écarlate) ---------- */
+  .fire-overlay{
+    position: fixed;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .8s ease;
+    overflow: hidden;
+  }
+  .fire-overlay.active{ opacity: 1; }
+
+  /* Lueur douce et fixe (plus d'ondulation) */
+  .fire-overlay::before{
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 30vh;
+    background: radial-gradient(ellipse at 50% 100%, rgba(255,90,0,.32) 0%, rgba(255,40,0,.14) 35%, transparent 70%);
+    animation: fire-glow-pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes fire-glow-pulse{
+    0%, 100%{ opacity: .65; }
+    50%{ opacity: 1; }
+  }
+
+  .ember{
+    position: absolute;
+    bottom: -10px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #ffdca0 0%, #ff8a1a 45%, transparent 80%);
+    box-shadow: 0 0 6px rgba(255,140,20,.8);
+    animation-name: ember-rise;
+    animation-timing-function: ease-out;
+    animation-fill-mode: forwards;
+  }
+  @keyframes ember-rise{
+    0%{ transform: translate(0, 0); opacity: 0; }
+    10%{ opacity: 1; }
+    100%{ transform: translate(var(--drift), -100vh); opacity: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .fire-overlay::before{ animation: none; opacity: .8; }
+    .ember{ display: none; }
   }
 
   .marquee{
@@ -271,11 +316,32 @@
     width: 100%;
     max-width: 560px;
     margin-bottom: 26px;
+    position: relative;
+  }
+  .start-screen::before,
+  .start-screen::after,
+  .admin-gate::before,
+  .admin-gate::after{
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius);
+    z-index: -1;
+  }
+  .start-screen::before, .admin-gate::before{
+    background: var(--purple);
+    transform: rotate(-2.2deg) translate(-8px, 10px);
+  }
+  .start-screen::after, .admin-gate::after{
+    background: var(--pink);
+    opacity: .55;
+    transform: rotate(2deg) translate(9px, -7px);
   }
   .admin-gate{
     width: 100%;
     max-width: 560px;
     margin-bottom: 26px;
+    position: relative;
   }
   .start-ticket{ text-align: center; }
   .start-ticket .hint{
@@ -292,6 +358,80 @@
   }
   .pseudo-note strong{ color: var(--yellow); }
 
+  .mode-panel{
+    border: 2px solid var(--card-edge);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 18px;
+    background: #0e0620;
+  }
+  /* ---------- Habillage "collage graphique" pour les écrans de menu ---------- */
+  .slash-heading{
+    display: inline-block;
+    font-family: 'Anton', sans-serif;
+    font-size: clamp(1.1rem, 4.6vw, 1.7rem);
+    letter-spacing: .02em;
+    text-transform: uppercase;
+    color: #0b0316;
+    background: var(--pink);
+    padding: 6px 24px;
+    margin-bottom: 4px;
+    transform: skewX(-8deg);
+    box-shadow: 4px 4px 0 var(--purple), 8px 8px 0 rgba(0,0,0,.5);
+    clip-path: polygon(4% 0, 100% 0, 96% 100%, 0 100%);
+  }
+  .slash-heading span{
+    display: inline-block;
+    transform: skewX(8deg);
+  }
+
+  @keyframes slam-in-left{
+    0%{ transform: translateX(-70px) rotate(-3deg); opacity: 0; }
+    65%{ transform: translateX(8px) rotate(1deg); opacity: 1; }
+    100%{ transform: translateX(0) rotate(0); opacity: 1; }
+  }
+  @keyframes slam-in-right{
+    0%{ transform: translateX(70px) rotate(3deg); opacity: 0; }
+    65%{ transform: translateX(-8px) rotate(-1deg); opacity: 1; }
+    100%{ transform: translateX(0) rotate(0); opacity: 1; }
+  }
+  .level-btn-enter-left{ animation: slam-in-left .45s cubic-bezier(.2,1.4,.4,1) both; }
+  .level-btn-enter-right{ animation: slam-in-right .45s cubic-bezier(.2,1.4,.4,1) both; }
+
+  @media (prefers-reduced-motion: reduce){
+    .level-btn-enter-left, .level-btn-enter-right, .mode-select-btn{ animation: none !important; }
+  }
+
+  .mode-select-view{
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .mode-select-btn{
+    font-family: 'VT323', monospace;
+    font-size: 1.6rem;
+    letter-spacing: .01em;
+    background: #0e0620;
+    color: var(--cyan);
+    border: 2px solid var(--cyan);
+    border-radius: var(--radius);
+    padding: 18px 16px;
+    cursor: pointer;
+    box-shadow: 0 6px 0 var(--purple), 0 10px 16px rgba(0,0,0,.45);
+    transition: transform .1s ease, box-shadow .1s ease;
+    clip-path: polygon(0 0, 100% 0, 100% 78%, 95% 100%, 0 100%);
+    animation: slam-in-left .4s cubic-bezier(.2,1.4,.4,1) both;
+  }
+  .mode-select-btn:nth-child(2){ animation-name: slam-in-right; animation-delay: .08s; }
+  .mode-select-btn:hover{ transform: translateY(-2px); box-shadow: 0 8px 0 var(--purple), 0 13px 18px rgba(0,0,0,.5); }
+  .mode-select-btn:active{ transform: translateY(4px); box-shadow: 0 2px 0 var(--purple), 0 3px 8px rgba(0,0,0,.4); }
+  .mode-select-btn:focus-visible{ outline: 2px solid var(--yellow); outline-offset: 2px; }
+
+  .back-btn{
+    margin-top: 14px;
+    width: 100%;
+  }
+
   .level-list{
     display: flex;
     flex-direction: column;
@@ -307,15 +447,17 @@
     border-radius: var(--radius);
     padding: 14px 16px;
     cursor: pointer;
-    box-shadow: 3px 3px 0 rgba(0,240,255,.3);
-    transition: transform .08s ease, box-shadow .08s ease;
+    box-shadow: 0 5px 0 var(--purple), 0 9px 14px rgba(0,0,0,.4);
+    transition: transform .1s ease, box-shadow .1s ease;
     position: relative;
     overflow: visible;
     display: flex;
     align-items: center;
     gap: 10px;
+    clip-path: polygon(0 0, 100% 0, 100% 84%, 96% 100%, 0 100%);
   }
-  .level-btn:hover{ transform: translate(-1px,-1px); box-shadow: 4px 4px 0 rgba(0,240,255,.45); }
+  .level-btn:hover{ transform: translateY(-2px); box-shadow: 0 7px 0 var(--purple), 0 12px 16px rgba(0,0,0,.45); }
+  .level-btn:active{ transform: translateY(3px); box-shadow: 0 2px 0 var(--purple), 0 3px 6px rgba(0,0,0,.35); }
   .level-btn:focus-visible{ outline: 2px solid var(--yellow); outline-offset: 2px; }
   .level-thumb{
     width: 34px;
@@ -579,7 +721,8 @@
     position: relative;
     box-shadow:
       0 0 10px rgba(176,38,255,.6),
-      8px 8px 0 rgba(176,38,255,.25);
+      8px 8px 0 rgba(176,38,255,.25),
+      0 22px 40px rgba(0,0,0,.5);
   }
 
   .ticket-label{
@@ -612,6 +755,27 @@
     color: var(--muted);
     letter-spacing: .04em;
     margin-right: 4px;
+  }
+
+  .rush-gauge-row{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .rush-gauge-track{
+    flex: 1;
+    height: 14px;
+    background: #0a0420;
+    border: 2px solid var(--card-edge);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .rush-gauge-fill{
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, var(--green), var(--yellow), var(--wrong));
+    box-shadow: 0 0 8px rgba(var(--cyan-rgb), .4);
   }
 
   .heart-icon{
@@ -1042,6 +1206,8 @@
     <div class="tv-line"></div>
   </div>
 
+  <div class="fire-overlay" id="fireOverlay" aria-hidden="true"></div>
+
   <div class="marquee">
     <div class="marquee-frame">
       <h1 class="title">CINETOILE</h1>
@@ -1049,9 +1215,24 @@
     <p class="subtitle">&gt; DEVINE LE FILM DERRIERE LA CRITIQUE LA PLUS ASSASSINE_</p>
   </div>
 
+  <div class="top-bar-row hidden" id="topBarRow">
+    <div class="settings-menu-wrapper">
+      <button class="settings-gear-btn" id="settingsGearBtn" aria-label="Ouvrir le menu réglages">⚙️</button>
+      <div class="settings-dropdown hidden" id="settingsDropdown">
+        <button class="ghost-btn" id="editorToggle">✎ GERER MES CRITIQUES</button>
+        <button class="ghost-btn" id="musicToggle">🔇 MUSIQUE</button>
+        <button class="ghost-btn" id="changeLevelBtn">🎚 CHANGER DE NIVEAU</button>
+        <button class="ghost-btn" id="viewLeaderboardBtn">🏆 VOIR LE CLASSEMENT</button>
+        <button class="ghost-btn" id="myStatsBtn">🏆 MON CLASSEMENT</button>
+        <button class="ghost-btn" id="rulesToggleBtn">📜 REGLES</button>
+      </div>
+    </div>
+    <div class="filmstrip hidden" id="filmstrip" aria-hidden="true"></div>
+  </div>
+
   <div class="admin-gate hidden" id="adminGate">
     <div class="ticket start-ticket">
-      <div class="ticket-label"><span>ACCES ADMIN</span></div>
+      <div class="ticket-label"><span class="slash-heading"><span>ACCES ADMIN</span></span></div>
       <p class="hint">Mot de passe requis pour gérer les critiques.</p>
       <form id="adminPasswordForm" class="answer-form">
         <input type="password" class="answer-input" id="adminPasswordInput" placeholder="Mot de passe..." autocomplete="off">
@@ -1063,7 +1244,7 @@
 
   <div class="rules-screen" id="rulesScreen">
     <div class="ticket start-ticket">
-      <div class="ticket-label"><span>REGLES DU JEU</span></div>
+      <div class="ticket-label"><span class="slash-heading"><span>REGLES DU JEU</span></span></div>
       <p class="rules-text">
         Bienvenu.e dans Cinétoile, le jeu qui affiche les pires critiques des meilleurs films du 7ème art.
         Le principe est simple : après avoir entré votre pseudo, vous devrez deviner le film à partir de sa critique assassine.
@@ -1076,7 +1257,7 @@
 
   <div class="start-screen" id="startScreen">
     <div class="ticket start-ticket">
-      <div class="ticket-label"><span>ACCES SALLE</span></div>
+      <div class="ticket-label"><span class="slash-heading"><span>ACCES SALLE</span></span></div>
       <p class="hint">Entre ton pseudo pour jouer et voir ta place dans le classement.</p>
       <form id="pseudoForm" class="answer-form">
         <input type="text" class="answer-input" id="pseudoInput" placeholder="Ton pseudo..." maxlength="20" autocomplete="off">
@@ -1091,28 +1272,27 @@
 
   <div class="start-screen hidden" id="levelScreen">
     <div class="ticket start-ticket">
-      <div class="ticket-label"><span>CHOISIS TON NIVEAU</span></div>
-      <p class="hint">Sélectionne le niveau de difficulté auquel tu veux jouer.</p>
-      <div id="levelList" class="level-list"></div>
+      <div class="ticket-label"><span class="slash-heading"><span>CHOISIS TON NIVEAU</span></span></div>
+      <p class="hint" id="levelScreenHint">Sélectionne un mode de jeu.</p>
+
+      <div class="mode-select-view" id="modeSelectView">
+        <button type="button" class="mode-select-btn" id="chooseClassicBtn">🎬 MODE CLASSIQUE</button>
+        <button type="button" class="mode-select-btn" id="chooseRushBtn">⏱ MODE RUSH</button>
+      </div>
+
+      <div class="mode-panel hidden" id="classicModePanel">
+        <div id="classicLevelList" class="level-list"></div>
+        <button type="button" class="ghost-btn back-btn" id="backFromClassicBtn">← RETOUR</button>
+      </div>
+
+      <div class="mode-panel hidden" id="rushModePanel">
+        <div id="rushLevelList" class="level-list"></div>
+        <button type="button" class="ghost-btn back-btn" id="backFromRushBtn">← RETOUR</button>
+      </div>
     </div>
   </div>
 
   <div class="game-area hidden" id="gameArea">
-
-  <div class="top-bar-row">
-    <div class="settings-menu-wrapper">
-      <button class="settings-gear-btn" id="settingsGearBtn" aria-label="Ouvrir le menu réglages">⚙️</button>
-      <div class="settings-dropdown hidden" id="settingsDropdown">
-        <button class="ghost-btn" id="editorToggle">✎ GERER MES CRITIQUES</button>
-        <button class="ghost-btn" id="musicToggle">🔇 MUSIQUE</button>
-        <button class="ghost-btn" id="changeLevelBtn">🎚 CHANGER DE NIVEAU</button>
-        <button class="ghost-btn" id="viewLeaderboardBtn">🏆 VOIR LE CLASSEMENT</button>
-        <button class="ghost-btn" id="myStatsBtn">🏆 MON CLASSEMENT</button>
-        <button class="ghost-btn" id="rulesToggleBtn">📜 REGLES</button>
-      </div>
-    </div>
-    <div class="filmstrip" id="filmstrip" aria-hidden="true"></div>
-  </div>
 
   <section class="editor-panel hidden" id="leaderboardPanel" aria-label="Classement complet">
     <h2>CLASSEMENT</h2>
@@ -1192,6 +1372,12 @@
         <span class="heart-icon" id="heart-2"><svg viewBox="0 0 14 12" width="18" height="16"><rect x="2" y="0" width="4" height="2"/><rect x="8" y="0" width="4" height="2"/><rect x="0" y="2" width="14" height="2"/><rect x="0" y="4" width="14" height="2"/><rect x="2" y="6" width="10" height="2"/><rect x="4" y="8" width="6" height="2"/><rect x="6" y="10" width="2" height="2"/></svg></span>
         <span class="heart-icon" id="heart-3"><svg viewBox="0 0 14 12" width="18" height="16"><rect x="2" y="0" width="4" height="2"/><rect x="8" y="0" width="4" height="2"/><rect x="0" y="2" width="14" height="2"/><rect x="0" y="4" width="14" height="2"/><rect x="2" y="6" width="10" height="2"/><rect x="4" y="8" width="6" height="2"/><rect x="6" y="10" width="2" height="2"/></svg></span>
         <span class="heart-icon" id="heart-4"><svg viewBox="0 0 14 12" width="18" height="16"><rect x="2" y="0" width="4" height="2"/><rect x="8" y="0" width="4" height="2"/><rect x="0" y="2" width="14" height="2"/><rect x="0" y="4" width="14" height="2"/><rect x="2" y="6" width="10" height="2"/><rect x="4" y="8" width="6" height="2"/><rect x="6" y="10" width="2" height="2"/></svg></span>
+      </div>
+      <div class="rush-gauge-row hidden" id="rushGaugeRow">
+        <span class="lives-label">TEMPS :</span>
+        <div class="rush-gauge-track">
+          <div class="rush-gauge-fill" id="rushGaugeFill"></div>
+        </div>
       </div>
       <blockquote class="review" id="reviewText"></blockquote>
       <form class="answer-form" id="answerForm">
@@ -1477,6 +1663,64 @@
     return (lvl && lvl.lives) || 5;
   }
 
+  function getLevelMode(levelName){
+    const lvl = findLevel(levelName);
+    return (lvl && lvl.mode) || 'normal';
+  }
+
+  const rushGaugeRow = document.getElementById('rushGaugeRow');
+  const rushGaugeFill = document.getElementById('rushGaugeFill');
+  const RUSH_INITIAL_TIME = 15;
+  const RUSH_DECREMENT = 1;
+  const RUSH_MIN_TIME = 5;
+  let rushActive = false;
+  let rushTimeoutHandler = null;
+
+  function getRushDuration(questionIndex){
+    return Math.max(RUSH_MIN_TIME, RUSH_INITIAL_TIME - questionIndex * RUSH_DECREMENT);
+  }
+
+  function startRushGauge(){
+    rushActive = true;
+    const duration = getRushDuration(current);
+    rushGaugeFill.style.transition = 'none';
+    rushGaugeFill.style.width = '100%';
+    void rushGaugeFill.offsetWidth; // force le reflow pour repartir bien de 100%
+    rushGaugeFill.style.transition = `width ${duration}s linear`;
+    rushGaugeFill.style.width = '0%';
+
+    rushTimeoutHandler = () => {
+      if (questionAnswered) return;
+      onRushTimeout();
+    };
+    rushGaugeFill.addEventListener('transitionend', rushTimeoutHandler, { once: true });
+  }
+
+  function stopRushGauge(){
+    rushActive = false;
+    if (rushTimeoutHandler){
+      rushGaugeFill.removeEventListener('transitionend', rushTimeoutHandler);
+      rushTimeoutHandler = null;
+    }
+    rushGaugeFill.style.transition = 'none';
+    rushGaugeFill.style.width = '100%';
+  }
+
+  function onRushTimeout(){
+    if (questionAnswered) return;
+    questionAnswered = true;
+    answerInput.disabled = true;
+    answerSubmitBtn.disabled = true;
+    feedbackEl.textContent = 'TEMPS ECOULE ! TU DECOUVRIRAS PEUT-ETRE LA REPONSE UNE PROCHAINE FOIS !';
+    feedbackEl.className = 'feedback wrong';
+    const frame = document.getElementById('frame-' + current);
+    if (frame) frame.classList.add('answered-wrong');
+    finishQuestion(false);
+    nextBtn.style.display = 'inline-block';
+    playWrongSound();
+  }
+
+  const livesRow = document.getElementById('livesRow');
   const heartEls = [
     document.getElementById('heart-0'),
     document.getElementById('heart-1'),
@@ -1506,14 +1750,57 @@
 
   const startScreen = document.getElementById('startScreen');
   const levelScreen = document.getElementById('levelScreen');
-  const levelList = document.getElementById('levelList');
+  const classicLevelList = document.getElementById('classicLevelList');
+  const rushLevelList = document.getElementById('rushLevelList');
+  const rushModePanel = document.getElementById('rushModePanel');
+  const classicModePanel = document.getElementById('classicModePanel');
+  const modeSelectView = document.getElementById('modeSelectView');
+  const chooseClassicBtn = document.getElementById('chooseClassicBtn');
+  const chooseRushBtn = document.getElementById('chooseRushBtn');
+  const backFromClassicBtn = document.getElementById('backFromClassicBtn');
+  const backFromRushBtn = document.getElementById('backFromRushBtn');
+  const levelScreenHint = document.getElementById('levelScreenHint');
+
+  function showModeSelect(){
+    modeSelectView.classList.remove('hidden');
+    classicModePanel.classList.add('hidden');
+    rushModePanel.classList.add('hidden');
+    levelScreenHint.textContent = 'Sélectionne un mode de jeu.';
+    resetTheme();
+  }
+
+  chooseClassicBtn.addEventListener('click', () => {
+    playSelectSound();
+    modeSelectView.classList.add('hidden');
+    classicModePanel.classList.remove('hidden');
+    levelScreenHint.textContent = 'Choisis ton niveau de difficulté.';
+  });
+
+  chooseRushBtn.addEventListener('click', () => {
+    playSelectSound();
+    modeSelectView.classList.add('hidden');
+    rushModePanel.classList.remove('hidden');
+    levelScreenHint.textContent = 'Choisis ton niveau Rush.';
+    applyTheme('inferno');
+  });
+
+  backFromClassicBtn.addEventListener('click', showModeSelect);
+  backFromRushBtn.addEventListener('click', showModeSelect);
   const gameArea = document.getElementById('gameArea');
   const pseudoForm = document.getElementById('pseudoForm');
   const pseudoInput = document.getElementById('pseudoInput');
   const changeLevelBtn = document.getElementById('changeLevelBtn');
   const settingsGearBtn = document.getElementById('settingsGearBtn');
   const settingsDropdown = document.getElementById('settingsDropdown');
+  const topBarRow = document.getElementById('topBarRow');
+
+  function updateTopBarVisibility(){
+    const inGame = !gameArea.classList.contains('hidden');
+    topBarRow.classList.toggle('hidden', !(isAdminUnlocked || inGame));
+    filmstrip.classList.toggle('hidden', !inGame);
+  }
   const rulesScreen = document.getElementById('rulesScreen');
+  const fireOverlay = document.getElementById('fireOverlay');
   const rulesToggleBtn = document.getElementById('rulesToggleBtn');
   const closeRulesBtn = document.getElementById('closeRulesBtn');
   const viewLeaderboardBtn = document.getElementById('viewLeaderboardBtn');
@@ -1534,7 +1821,7 @@
   const lbAdminRow = document.getElementById('lbAdminRow');
 
   let playerName = '';
-  let availableLevels = [{ name: 'Facile', imageUrl: '', animation: 'pulse', lives: 5, theme: 'default' }];
+  let availableLevels = [{ name: 'Facile', imageUrl: '', animation: 'pulse', lives: 5, theme: 'default', mode: 'normal' }];
   let currentLevel = null;
   const leaderboard = [];
 
@@ -1674,7 +1961,7 @@
       const doc = await db.collection('config').doc('levels').get();
       if (doc.exists && Array.isArray(doc.data().names) && doc.data().names.length){
         availableLevels = doc.data().names.map(l =>
-          typeof l === 'string' ? { name: l, imageUrl: '', animation: 'pulse', lives: 5, theme: 'default' } : { lives: 5, ...l }
+          typeof l === 'string' ? { name: l, imageUrl: '', animation: 'pulse', lives: 5, theme: 'default', mode: 'normal' } : { lives: 5, theme: 'default', mode: 'normal', ...l }
         );
       }
     } catch (err){
@@ -1843,6 +2130,7 @@
     playerName = name;
     startScreen.classList.add('hidden');
     renderLevelList();
+    showModeSelect();
     levelScreen.classList.remove('hidden');
   });
 
@@ -1850,7 +2138,9 @@
     gameArea.classList.add('hidden');
     resetTheme();
     renderLevelList();
+    showModeSelect();
     levelScreen.classList.remove('hidden');
+    updateTopBarVisibility();
   });
 
   settingsGearBtn.addEventListener('click', (e) => {
@@ -1875,7 +2165,12 @@
   });
 
   function renderLevelList(){
-    levelList.innerHTML = '';
+    classicLevelList.innerHTML = '';
+    rushLevelList.innerHTML = '';
+    let hasRushLevels = false;
+    let classicIdx = 0;
+    let rushIdx = 0;
+
     availableLevels.forEach(level => {
       const count = allQuestions.filter(q => q.level === level.name).length;
       const btn = document.createElement('button');
@@ -1901,8 +2196,23 @@
         playLevelAnimation(btn, level.animation || 'pulse');
         setTimeout(() => selectLevel(level.name), 260);
       });
-      levelList.appendChild(btn);
+
+      const isRush = (level.mode || 'normal') === 'rush';
+      const idx = isRush ? rushIdx++ : classicIdx++;
+      const enterClass = idx % 2 === 0 ? 'level-btn-enter-left' : 'level-btn-enter-right';
+      btn.classList.add(enterClass);
+      btn.style.animationDelay = (idx * 0.07) + 's';
+      setTimeout(() => btn.classList.remove(enterClass), 600);
+
+      if (isRush){
+        hasRushLevels = true;
+        rushLevelList.appendChild(btn);
+      } else {
+        classicLevelList.appendChild(btn);
+      }
     });
+
+    chooseRushBtn.classList.toggle('hidden', !hasRushLevels);
   }
 
   function playLevelAnimation(btn, type){
@@ -1936,6 +2246,7 @@
     levelScreen.classList.add('hidden');
     rulesScreen.classList.add('hidden');
     gameArea.classList.remove('hidden');
+    updateTopBarVisibility();
     rebuildPool();
     resetQuiz();
     answerInput.focus();
@@ -1963,7 +2274,7 @@
       levelSelect.value = trimmed;
       return;
     }
-    availableLevels.push({ name: trimmed, imageUrl: '', animation: 'pulse', lives: 5, theme: 'default' });
+    availableLevels.push({ name: trimmed, imageUrl: '', animation: 'pulse', lives: 5, theme: 'default', mode: 'normal' });
     refreshLevelSelectOptions();
     renderLevelManageList();
     levelSelect.value = trimmed;
@@ -1976,6 +2287,11 @@
     glitch: 'Glitch électrique',
     wave: 'Onde sonar',
     explode: 'Explosion pixel'
+  };
+
+  const MODE_LABELS = {
+    normal: 'Normal (essais)',
+    rush: 'Rush (contre la montre)'
   };
 
   const THEME_PRESETS = {
@@ -1996,7 +2312,7 @@
     },
     toxic: {
       label: 'Toxique',
-      colors: { pink:'#d4ff00', cyan:'#39ff14', purple:'#4a6b00', yellow:'#faff00', green:'#39ff14', wrong:'#ff2e2e', bg:'#050f02', bgDeep:'#020701', purpleRgb:'74,107,0', cyanRgb:'57,255,20' },
+      colors: { pink:'#c7e600', cyan:'#5fdb3a', purple:'#4a6b00', yellow:'#e6f200', green:'#5fdb3a', wrong:'#ff2e2e', bg:'#050f02', bgDeep:'#020701', purpleRgb:'74,107,0', cyanRgb:'95,219,58' },
       music: 'arcade'
     }
   };
@@ -2015,10 +2331,46 @@
     root.setProperty('--purple-rgb', theme.colors.purpleRgb);
     root.setProperty('--cyan-rgb', theme.colors.cyanRgb);
     setMusicPreset(theme.music);
+
+    if (themeKey === 'inferno'){
+      startFireAmbience();
+    } else {
+      stopFireAmbience();
+    }
   }
 
   function resetTheme(){
     applyTheme('default');
+  }
+
+  let emberInterval = null;
+
+  function spawnEmber(){
+    const ember = document.createElement('span');
+    ember.className = 'ember';
+    ember.style.left = Math.random() * 100 + '%';
+    ember.style.setProperty('--drift', (Math.random() * 60 - 30) + 'px');
+    const duration = 3 + Math.random() * 2.5;
+    ember.style.animationDuration = duration + 's';
+    fireOverlay.appendChild(ember);
+    setTimeout(() => ember.remove(), duration * 1000 + 100);
+  }
+
+  function startFireAmbience(){
+    fireOverlay.classList.add('active');
+    if (emberInterval) return;
+    emberInterval = setInterval(() => {
+      spawnEmber();
+      spawnEmber();
+    }, 180);
+  }
+
+  function stopFireAmbience(){
+    fireOverlay.classList.remove('active');
+    if (emberInterval){
+      clearInterval(emberInterval);
+      emberInterval = null;
+    }
   }
 
   function renderLevelManageList(){
@@ -2071,6 +2423,16 @@
       });
       info.appendChild(themeSelect);
 
+      const modeSelect = document.createElement('select');
+      Object.keys(MODE_LABELS).forEach(key => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = MODE_LABELS[key];
+        if ((level.mode || 'normal') === key) opt.selected = true;
+        modeSelect.appendChild(opt);
+      });
+      info.appendChild(modeSelect);
+
       const actions = document.createElement('div');
       actions.className = 'item-actions';
       const saveBtn = document.createElement('button');
@@ -2100,7 +2462,8 @@
           imageUrl: imgField.value.trim(),
           animation: animSelect.value,
           lives: lives,
-          theme: themeSelect.value
+          theme: themeSelect.value,
+          mode: modeSelect.value
         };
 
         if (newName !== oldName){
@@ -2548,6 +2911,9 @@
       feedbackEl.textContent = '';
       commonPointsEl.innerHTML = '';
       posterBox.classList.add('hidden');
+      stopRushGauge();
+      rushGaugeRow.classList.add('hidden');
+      livesRow.classList.remove('hidden');
       nextBtn.style.display = 'none';
       return;
     }
@@ -2563,13 +2929,23 @@
     nextBtn.style.display = 'none';
     nextBtn.textContent = 'SUIVANT →';
 
-    currentMaxAttempts = getLevelLives(currentLevel);
-    attemptsLeft = currentMaxAttempts;
     currentGuesses = [];
     questionAnswered = false;
     cachedAnswerKey = null;
     cachedAnswerInfo = null;
-    updateHearts();
+    stopRushGauge();
+
+    if (getLevelMode(currentLevel) === 'rush'){
+      livesRow.classList.add('hidden');
+      rushGaugeRow.classList.remove('hidden');
+      startRushGauge();
+    } else {
+      rushGaugeRow.classList.add('hidden');
+      livesRow.classList.remove('hidden');
+      currentMaxAttempts = getLevelLives(currentLevel);
+      attemptsLeft = currentMaxAttempts;
+      updateHearts();
+    }
 
     answerInput.value = '';
     answerInput.disabled = false;
@@ -2654,6 +3030,7 @@
 
     if (isCorrect){
       questionAnswered = true;
+      stopRushGauge();
       answerInput.disabled = true;
       answerSubmitBtn.disabled = true;
       answerInput.className = 'answer-input correct';
@@ -2666,6 +3043,15 @@
       nextBtn.style.display = 'inline-block';
       playCorrectSound();
       showPoster(q.answer);
+    } else if (getLevelMode(currentLevel) === 'rush'){
+      showCommonPointsHint(guess, q.answer, currentGuesses.length);
+      playWrongSound();
+      feedbackEl.textContent = 'RATE — CONTINUE, LE TEMPS COURT TOUJOURS !';
+      feedbackEl.className = 'feedback wrong';
+      answerInput.value = '';
+      answerInput.className = 'answer-input wrong';
+      answerInput.focus();
+      nextBtn.style.display = 'none';
     } else {
       attemptsLeft = Math.max(0, attemptsLeft - 1);
       updateHearts();
@@ -2723,13 +3109,19 @@
     document.getElementById('resultScore').textContent =
       `${score} / ${QUESTIONS.length} FILMS DEVINES`;
 
-    const name = playerName || 'ANONYME';
-    const localEntry = upsertPlayerStatsLocal(name, score, QUESTIONS.length);
-    renderLeaderboard(localEntry);
+    if (isAdminUnlocked){
+      rankLine.textContent = "MODE ADMIN — CETTE PARTIE N'EST PAS COMPTABILISEE DANS LE CLASSEMENT.";
+      statsLine.textContent = '';
+      renderLeaderboard();
+    } else {
+      const name = playerName || 'ANONYME';
+      const localEntry = upsertPlayerStatsLocal(name, score, QUESTIONS.length);
+      renderLeaderboard(localEntry);
 
-    upsertPlayerStatsCloud(name, score, QUESTIONS.length).then(cloudEntry => {
-      if (cloudEntry) loadLeaderboardFromCloud(cloudEntry);
-    });
+      upsertPlayerStatsCloud(name, score, QUESTIONS.length).then(cloudEntry => {
+        if (cloudEntry) loadLeaderboardFromCloud(cloudEntry);
+      });
+    }
 
     renderFinalSummary();
   }
@@ -2794,6 +3186,7 @@
   const adminPasswordForm = document.getElementById('adminPasswordForm');
   const adminPasswordInput = document.getElementById('adminPasswordInput');
   const adminGateMsg = document.getElementById('adminGateMsg');
+  let isAdminUnlocked = false;
 
   editorToggle.style.display = 'none';
   viewLeaderboardBtn.style.display = 'none';
@@ -2820,10 +3213,17 @@
 
     const hash = await sha256Hex(adminPasswordInput.value);
     if (hash === ADMIN_PASSWORD_HASH){
+      isAdminUnlocked = true;
+      playerName = 'ADMIN';
       editorToggle.style.display = '';
       viewLeaderboardBtn.style.display = '';
       lbAdminRow.classList.remove('hidden');
       adminGate.classList.add('hidden');
+      startScreen.classList.add('hidden');
+      renderLevelList();
+      showModeSelect();
+      levelScreen.classList.remove('hidden');
+      updateTopBarVisibility();
     } else {
       adminGateMsg.textContent = 'Mot de passe incorrect.';
       adminPasswordInput.value = '';
@@ -3026,7 +3426,7 @@
         }));
 
         normalized.forEach(q => {
-          if (!findLevel(q.level)) availableLevels.push({ name: q.level, imageUrl: '', animation: 'pulse', lives: 5, theme: 'default' });
+          if (!findLevel(q.level)) availableLevels.push({ name: q.level, imageUrl: '', animation: 'pulse', lives: 5, theme: 'default', mode: 'normal' });
           allQuestions.push(q);
           addCritiqueToCloud(q).then(id => { if (id) q.id = id; });
         });
@@ -3088,7 +3488,7 @@
     // S'assure que tous les niveaux réellement utilisés par les critiques existent bien
     // dans la liste des niveaux (utile si Firestore contient des niveaux non déclarés).
     allQuestions.forEach(q => {
-      if (q.level && !findLevel(q.level)) availableLevels.push({ name: q.level, imageUrl: '', animation: 'pulse', lives: 5, theme: 'default' });
+      if (q.level && !findLevel(q.level)) availableLevels.push({ name: q.level, imageUrl: '', animation: 'pulse', lives: 5, theme: 'default', mode: 'normal' });
     });
 
     await initTMDb();
@@ -3103,6 +3503,7 @@
     updateHearts();
     renderLeaderboard();
     loadLeaderboardFromCloud();
+    updateTopBarVisibility();
     pseudoInput.focus();
   }
 
