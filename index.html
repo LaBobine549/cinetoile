@@ -964,6 +964,7 @@
   }
   .level-manage-info p{ color: var(--cyan); font-weight: normal; }
   .level-manage-info input[type="text"],
+  .level-manage-info input[type="number"],
   .level-manage-info select{
     background:#1b1013;
     border: 1px solid #3a2027;
@@ -973,6 +974,7 @@
     font-size: 0.95rem;
     padding: 6px 8px;
   }
+  .level-manage-info input[type="number"]{ max-width: 90px; }
 
   .empty-note{
     color: var(--muted);
@@ -1422,8 +1424,13 @@
   let score = 0;
   let attemptsLeft = 5;
   let currentGuesses = [];
-  const MAX_ATTEMPTS = 5;
+  let currentMaxAttempts = 5;
   const history = [];
+
+  function getLevelLives(levelName){
+    const lvl = findLevel(levelName);
+    return (lvl && lvl.lives) || 5;
+  }
 
   const heartEls = [
     document.getElementById('heart-0'),
@@ -1440,7 +1447,6 @@
   const answerInput = document.getElementById('answerInput');
   const answerSubmitBtn = answerForm.querySelector('.answer-submit-btn');
   let questionAnswered = false;
-  let gameOver = false;
   const feedbackEl = document.getElementById('feedback');
   const commonPointsEl = document.getElementById('commonPoints');
   const posterBox = document.getElementById('posterBox');
@@ -1481,7 +1487,7 @@
   const lbAdminRow = document.getElementById('lbAdminRow');
 
   let playerName = '';
-  let availableLevels = [{ name: 'Facile', imageUrl: '', animation: 'pulse' }];
+  let availableLevels = [{ name: 'Facile', imageUrl: '', animation: 'pulse', lives: 5 }];
   let currentLevel = null;
   const leaderboard = [];
 
@@ -1621,7 +1627,7 @@
       const doc = await db.collection('config').doc('levels').get();
       if (doc.exists && Array.isArray(doc.data().names) && doc.data().names.length){
         availableLevels = doc.data().names.map(l =>
-          typeof l === 'string' ? { name: l, imageUrl: '', animation: 'pulse' } : l
+          typeof l === 'string' ? { name: l, imageUrl: '', animation: 'pulse', lives: 5 } : { lives: 5, ...l }
         );
       }
     } catch (err){
@@ -1896,7 +1902,7 @@
       levelSelect.value = trimmed;
       return;
     }
-    availableLevels.push({ name: trimmed, imageUrl: '', animation: 'pulse' });
+    availableLevels.push({ name: trimmed, imageUrl: '', animation: 'pulse', lives: 5 });
     refreshLevelSelectOptions();
     renderLevelManageList();
     levelSelect.value = trimmed;
@@ -1943,6 +1949,14 @@
       info.appendChild(imgField);
       info.appendChild(animSelect);
 
+      const livesField = document.createElement('input');
+      livesField.type = 'number';
+      livesField.min = '1';
+      livesField.max = '5';
+      livesField.placeholder = 'Nombre de vies (essais)';
+      livesField.value = level.lives || 5;
+      info.appendChild(livesField);
+
       const actions = document.createElement('div');
       actions.className = 'item-actions';
       const saveBtn = document.createElement('button');
@@ -1963,10 +1977,15 @@
           return;
         }
 
+        let lives = parseInt(livesField.value, 10);
+        if (!Number.isInteger(lives) || lives < 1) lives = 1;
+        if (lives > 5) lives = 5;
+
         availableLevels[idx] = {
           name: newName,
           imageUrl: imgField.value.trim(),
-          animation: animSelect.value
+          animation: animSelect.value,
+          lives: lives
         };
 
         if (newName !== oldName){
@@ -2374,7 +2393,12 @@
   function updateHearts(){
     heartEls.forEach((el, i) => {
       if (!el) return;
-      el.classList.toggle('lost', i >= attemptsLeft);
+      if (i >= currentMaxAttempts){
+        el.style.display = 'none';
+      } else {
+        el.style.display = '';
+        el.classList.toggle('lost', i >= attemptsLeft);
+      }
     });
   }
 
@@ -2401,7 +2425,8 @@
     nextBtn.style.display = 'none';
     nextBtn.textContent = 'SUIVANT →';
 
-    attemptsLeft = MAX_ATTEMPTS;
+    currentMaxAttempts = getLevelLives(currentLevel);
+    attemptsLeft = currentMaxAttempts;
     currentGuesses = [];
     questionAnswered = false;
     cachedAnswerKey = null;
@@ -2518,25 +2543,19 @@
         nextBtn.style.display = 'none';
       } else {
         questionAnswered = true;
-        gameOver = true;
         answerInput.disabled = true;
         answerSubmitBtn.disabled = true;
         answerInput.className = 'answer-input wrong';
-        feedbackEl.textContent = `RATE — C'ETAIT "${q.answer}". PLUS D'ESSAIS, PARTIE TERMINEE.`;
+        feedbackEl.textContent = 'RATE — PLUS D\'ESSAIS. TU DECOUVRIRAS PEUT-ETRE LA REPONSE UNE PROCHAINE FOIS !';
         feedbackEl.className = 'feedback wrong';
         if (frame) frame.classList.add('answered-wrong');
         finishQuestion(false);
-        nextBtn.textContent = 'VOIR LE RESULTAT →';
         nextBtn.style.display = 'inline-block';
       }
     }
   }
 
   function nextQuestion(){
-    if (gameOver){
-      showResult();
-      return;
-    }
     current++;
     if (current < QUESTIONS.length){
       renderQuestion();
@@ -2561,11 +2580,10 @@
       starsEl.appendChild(span);
     }
 
-    document.getElementById('resultHeader').textContent = gameOver ? 'PERDU' : 'RECAP';
+    document.getElementById('resultHeader').textContent = 'RECAP';
     document.getElementById('resultLevel').textContent = level.name;
-    document.getElementById('resultScore').textContent = gameOver
-      ? `PARTIE TERMINEE — ${score} / ${current + 1} FILMS DEVINES AVANT L'ECHEC`
-      : `${score} / ${QUESTIONS.length} FILMS DEVINES`;
+    document.getElementById('resultScore').textContent =
+      `${score} / ${QUESTIONS.length} FILMS DEVINES`;
 
     const name = playerName || 'ANONYME';
     const localEntry = upsertPlayerStatsLocal(name, score, QUESTIONS.length);
@@ -2601,7 +2619,7 @@
       answerP.className = 'guess-answer';
       answerP.textContent = h.solved
         ? `Trouvé ! La réponse était "${h.correctAnswer}".`
-        : `Pas trouvé — la réponse était "${h.correctAnswer}".`;
+        : 'Pas trouvé — tu pourras retenter ta chance à une prochaine partie !';
       block.appendChild(answerP);
 
       finalSummaryEl.appendChild(block);
@@ -2611,7 +2629,6 @@
   function resetQuiz(){
     current = 0;
     score = 0;
-    gameOver = false;
     history.length = 0;
     resultCard.classList.add('hidden');
     quizCard.classList.remove('hidden');
@@ -2871,7 +2888,7 @@
         }));
 
         normalized.forEach(q => {
-          if (!findLevel(q.level)) availableLevels.push({ name: q.level, imageUrl: '', animation: 'pulse' });
+          if (!findLevel(q.level)) availableLevels.push({ name: q.level, imageUrl: '', animation: 'pulse', lives: 5 });
           allQuestions.push(q);
           addCritiqueToCloud(q).then(id => { if (id) q.id = id; });
         });
@@ -2933,7 +2950,7 @@
     // S'assure que tous les niveaux réellement utilisés par les critiques existent bien
     // dans la liste des niveaux (utile si Firestore contient des niveaux non déclarés).
     allQuestions.forEach(q => {
-      if (q.level && !findLevel(q.level)) availableLevels.push({ name: q.level, imageUrl: '', animation: 'pulse' });
+      if (q.level && !findLevel(q.level)) availableLevels.push({ name: q.level, imageUrl: '', animation: 'pulse', lives: 5 });
     });
 
     await initTMDb();
