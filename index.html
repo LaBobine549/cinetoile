@@ -20,6 +20,8 @@
     --muted: #8b7fc0;
     --green: #39ff88;
     --wrong: #ff3860;
+    --purple-rgb: 176,38,255;
+    --cyan-rgb: 0,240,255;
     --radius: 6px;
   }
 
@@ -29,8 +31,8 @@
     margin:0;
     min-height:100%;
     background:
-      repeating-linear-gradient(0deg, rgba(176,38,255,.07) 0 1px, transparent 1px 42px),
-      repeating-linear-gradient(90deg, rgba(0,240,255,.05) 0 1px, transparent 1px 42px),
+      repeating-linear-gradient(0deg, rgba(var(--purple-rgb),.07) 0 1px, transparent 1px 42px),
+      repeating-linear-gradient(90deg, rgba(var(--cyan-rgb),.05) 0 1px, transparent 1px 42px),
       radial-gradient(ellipse at 50% 0%, #23103f 0%, var(--bg) 55%, var(--bg-deep) 100%);
     background-attachment: fixed;
     animation: bg-drift 30s linear infinite, bg-glow 9s ease-in-out infinite;
@@ -205,10 +207,19 @@
     box-shadow: 3px 3px 0 rgba(57,255,136,.35);
   }
 
+  .top-bar-row{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 560px;
+    margin: 0 auto 26px;
+  }
+
   .settings-menu-wrapper{
     position: relative;
     display: inline-block;
-    margin-bottom: 26px;
+    flex-shrink: 0;
   }
 
   .settings-gear-btn{
@@ -466,12 +477,10 @@
 
   /* ---------- Filmstrip / power bar ---------- */
   .filmstrip{
-    width: 100%;
-    max-width: 560px;
+    flex: 1;
     display:flex;
     align-items:center;
     gap: 4px;
-    margin-bottom: 26px;
     background: #0a0420;
     border-radius: var(--radius);
     padding: 8px;
@@ -1090,16 +1099,19 @@
 
   <div class="game-area hidden" id="gameArea">
 
-  <div class="settings-menu-wrapper">
-    <button class="settings-gear-btn" id="settingsGearBtn" aria-label="Ouvrir le menu réglages">⚙️</button>
-    <div class="settings-dropdown hidden" id="settingsDropdown">
-      <button class="ghost-btn" id="editorToggle">✎ GERER MES CRITIQUES</button>
-      <button class="ghost-btn" id="musicToggle">🔇 MUSIQUE</button>
-      <button class="ghost-btn" id="changeLevelBtn">🎚 CHANGER DE NIVEAU</button>
-      <button class="ghost-btn" id="viewLeaderboardBtn">🏆 VOIR LE CLASSEMENT</button>
-      <button class="ghost-btn" id="myStatsBtn">🏆 MON CLASSEMENT</button>
-      <button class="ghost-btn" id="rulesToggleBtn">📜 REGLES</button>
+  <div class="top-bar-row">
+    <div class="settings-menu-wrapper">
+      <button class="settings-gear-btn" id="settingsGearBtn" aria-label="Ouvrir le menu réglages">⚙️</button>
+      <div class="settings-dropdown hidden" id="settingsDropdown">
+        <button class="ghost-btn" id="editorToggle">✎ GERER MES CRITIQUES</button>
+        <button class="ghost-btn" id="musicToggle">🔇 MUSIQUE</button>
+        <button class="ghost-btn" id="changeLevelBtn">🎚 CHANGER DE NIVEAU</button>
+        <button class="ghost-btn" id="viewLeaderboardBtn">🏆 VOIR LE CLASSEMENT</button>
+        <button class="ghost-btn" id="myStatsBtn">🏆 MON CLASSEMENT</button>
+        <button class="ghost-btn" id="rulesToggleBtn">📜 REGLES</button>
+      </div>
     </div>
+    <div class="filmstrip" id="filmstrip" aria-hidden="true"></div>
   </div>
 
   <section class="editor-panel hidden" id="leaderboardPanel" aria-label="Classement complet">
@@ -1166,8 +1178,6 @@
       <input type="file" id="importInput" accept="application/json">
     </div>
   </section>
-
-  <div class="filmstrip" id="filmstrip" aria-hidden="true"></div>
 
   <div class="stage">
     <div class="ticket" id="quizCard">
@@ -1524,7 +1534,7 @@
   const lbAdminRow = document.getElementById('lbAdminRow');
 
   let playerName = '';
-  let availableLevels = [{ name: 'Facile', imageUrl: '', animation: 'pulse', lives: 5 }];
+  let availableLevels = [{ name: 'Facile', imageUrl: '', animation: 'pulse', lives: 5, theme: 'default' }];
   let currentLevel = null;
   const leaderboard = [];
 
@@ -1664,7 +1674,7 @@
       const doc = await db.collection('config').doc('levels').get();
       if (doc.exists && Array.isArray(doc.data().names) && doc.data().names.length){
         availableLevels = doc.data().names.map(l =>
-          typeof l === 'string' ? { name: l, imageUrl: '', animation: 'pulse', lives: 5 } : { lives: 5, ...l }
+          typeof l === 'string' ? { name: l, imageUrl: '', animation: 'pulse', lives: 5, theme: 'default' } : { lives: 5, ...l }
         );
       }
     } catch (err){
@@ -1838,6 +1848,7 @@
 
   changeLevelBtn.addEventListener('click', () => {
     gameArea.classList.add('hidden');
+    resetTheme();
     renderLevelList();
     levelScreen.classList.remove('hidden');
   });
@@ -1920,6 +1931,8 @@
 
   function selectLevel(level){
     currentLevel = level;
+    const levelObj = findLevel(level);
+    applyTheme(levelObj ? levelObj.theme : 'default');
     levelScreen.classList.add('hidden');
     rulesScreen.classList.add('hidden');
     gameArea.classList.remove('hidden');
@@ -1950,7 +1963,7 @@
       levelSelect.value = trimmed;
       return;
     }
-    availableLevels.push({ name: trimmed, imageUrl: '', animation: 'pulse', lives: 5 });
+    availableLevels.push({ name: trimmed, imageUrl: '', animation: 'pulse', lives: 5, theme: 'default' });
     refreshLevelSelectOptions();
     renderLevelManageList();
     levelSelect.value = trimmed;
@@ -1964,6 +1977,49 @@
     wave: 'Onde sonar',
     explode: 'Explosion pixel'
   };
+
+  const THEME_PRESETS = {
+    default: {
+      label: 'Néon classique (par défaut)',
+      colors: { pink:'#ff2e9a', cyan:'#00f0ff', purple:'#b026ff', yellow:'#f9f002', green:'#39ff88', wrong:'#ff3860', bg:'#0b0316', bgDeep:'#05010c', purpleRgb:'176,38,255', cyanRgb:'0,240,255' },
+      music: 'dark'
+    },
+    inferno: {
+      label: 'Enfer écarlate',
+      colors: { pink:'#ff3d1a', cyan:'#ff8a00', purple:'#8c0f2a', yellow:'#ffcf40', green:'#7cff3d', wrong:'#ff003c', bg:'#160402', bgDeep:'#0a0100', purpleRgb:'140,15,42', cyanRgb:'255,138,0' },
+      music: 'dark'
+    },
+    abyss: {
+      label: 'Abysse glacial',
+      colors: { pink:'#3d6bff', cyan:'#38f9d7', purple:'#141a4e', yellow:'#a0e7ff', green:'#00e0a4', wrong:'#ff4d6d', bg:'#010512', bgDeep:'#00030a', purpleRgb:'20,26,78', cyanRgb:'56,249,215' },
+      music: 'mystery'
+    },
+    toxic: {
+      label: 'Toxique',
+      colors: { pink:'#d4ff00', cyan:'#39ff14', purple:'#4a6b00', yellow:'#faff00', green:'#39ff14', wrong:'#ff2e2e', bg:'#050f02', bgDeep:'#020701', purpleRgb:'74,107,0', cyanRgb:'57,255,20' },
+      music: 'arcade'
+    }
+  };
+
+  function applyTheme(themeKey){
+    const theme = THEME_PRESETS[themeKey] || THEME_PRESETS.default;
+    const root = document.documentElement.style;
+    root.setProperty('--pink', theme.colors.pink);
+    root.setProperty('--cyan', theme.colors.cyan);
+    root.setProperty('--purple', theme.colors.purple);
+    root.setProperty('--yellow', theme.colors.yellow);
+    root.setProperty('--green', theme.colors.green);
+    root.setProperty('--wrong', theme.colors.wrong);
+    root.setProperty('--bg', theme.colors.bg);
+    root.setProperty('--bg-deep', theme.colors.bgDeep);
+    root.setProperty('--purple-rgb', theme.colors.purpleRgb);
+    root.setProperty('--cyan-rgb', theme.colors.cyanRgb);
+    setMusicPreset(theme.music);
+  }
+
+  function resetTheme(){
+    applyTheme('default');
+  }
 
   function renderLevelManageList(){
     levelManageList.innerHTML = '';
@@ -2005,6 +2061,16 @@
       livesField.value = level.lives || 5;
       info.appendChild(livesField);
 
+      const themeSelect = document.createElement('select');
+      Object.keys(THEME_PRESETS).forEach(key => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = THEME_PRESETS[key].label;
+        if ((level.theme || 'default') === key) opt.selected = true;
+        themeSelect.appendChild(opt);
+      });
+      info.appendChild(themeSelect);
+
       const actions = document.createElement('div');
       actions.className = 'item-actions';
       const saveBtn = document.createElement('button');
@@ -2033,7 +2099,8 @@
           name: newName,
           imageUrl: imgField.value.trim(),
           animation: animSelect.value,
-          lives: lives
+          lives: lives,
+          theme: themeSelect.value
         };
 
         if (newName !== oldName){
@@ -2213,11 +2280,33 @@
     C4:261.63, D4:293.66, E4:329.63, F4:349.23, G4:392.00, A4:440.00, B4:493.88,
     C5:523.25, D5:587.33, E5:659.25, F5:698.46, G5:783.99, A5:880.00
   };
-  // Composition originale (mineure, ostinato grave et répétitif) — ambiance
-  // sombre et mécanique façon thriller sci-fi, sans reprendre de mélodie existante.
-  const LEAD = ['A3','A3','C4','A3','A3','A3','E4','A3','G3','G3','A3','G3','G3','G3','D4','G3'];
-  const BASS = ['A2','A2','G2','A2'];
-  const STEP = 0.2;
+
+  // Compositions 100% originales, une par ambiance de thème.
+  const MUSIC_PRESETS = {
+    dark: {
+      // Mineure, ostinato grave et répétitif — ambiance sombre et mécanique.
+      lead: ['A3','A3','C4','A3','A3','A3','E4','A3','G3','G3','A3','G3','G3','G3','D4','G3'],
+      bass: ['A2','A2','G2','A2'],
+      step: 0.2
+    },
+    arcade: {
+      // Majeure, arpèges enjoués — ambiance arcade énergique.
+      lead: ['C4','E4','G4','E4','C4','E4','G4','E4','D4','F4','A4','F4','D4','F4','A4','F4'],
+      bass: ['C3','G3','A3','F3'],
+      step: 0.16
+    },
+    mystery: {
+      // Notes espacées, tempo lent — ambiance suspendue et mystérieuse.
+      lead: ['E4', null, 'G4', null, 'E4', null, 'D4', null, 'C4', null, null, null, 'B3', null, null, null],
+      bass: ['E3', 'E3', 'C3', 'C3'],
+      step: 0.26
+    }
+  };
+  let currentMusic = MUSIC_PRESETS.dark;
+
+  function setMusicPreset(key){
+    currentMusic = MUSIC_PRESETS[key] || MUSIC_PRESETS.dark;
+  }
 
   let audioCtx = null;
   let masterGain = null;
@@ -2258,15 +2347,16 @@
   function scheduleMusicLoop(){
     if (!musicEnabled || !audioCtx) return;
     const startTime = audioCtx.currentTime + 0.05;
+    const { lead, bass, step } = currentMusic;
 
-    LEAD.forEach((note, i) => {
-      if (note) playTone(NOTES[note], startTime + i * STEP, STEP * 0.9, 'square', 0.05, musicGain);
+    lead.forEach((note, i) => {
+      if (note) playTone(NOTES[note], startTime + i * step, step * 0.9, 'square', 0.05, musicGain);
     });
-    BASS.forEach((note, i) => {
-      if (note) playTone(NOTES[note], startTime + i * STEP * 4, STEP * 4 * 0.9, 'triangle', 0.07, musicGain);
+    bass.forEach((note, i) => {
+      if (note) playTone(NOTES[note], startTime + i * step * 4, step * 4 * 0.9, 'triangle', 0.07, musicGain);
     });
 
-    const loopDuration = LEAD.length * STEP;
+    const loopDuration = lead.length * step;
     musicTimer = setTimeout(scheduleMusicLoop, loopDuration * 1000);
   }
 
@@ -2936,7 +3026,7 @@
         }));
 
         normalized.forEach(q => {
-          if (!findLevel(q.level)) availableLevels.push({ name: q.level, imageUrl: '', animation: 'pulse', lives: 5 });
+          if (!findLevel(q.level)) availableLevels.push({ name: q.level, imageUrl: '', animation: 'pulse', lives: 5, theme: 'default' });
           allQuestions.push(q);
           addCritiqueToCloud(q).then(id => { if (id) q.id = id; });
         });
@@ -2998,7 +3088,7 @@
     // S'assure que tous les niveaux réellement utilisés par les critiques existent bien
     // dans la liste des niveaux (utile si Firestore contient des niveaux non déclarés).
     allQuestions.forEach(q => {
-      if (q.level && !findLevel(q.level)) availableLevels.push({ name: q.level, imageUrl: '', animation: 'pulse', lives: 5 });
+      if (q.level && !findLevel(q.level)) availableLevels.push({ name: q.level, imageUrl: '', animation: 'pulse', lives: 5, theme: 'default' });
     });
 
     await initTMDb();
