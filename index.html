@@ -205,11 +205,43 @@
     box-shadow: 3px 3px 0 rgba(57,255,136,.35);
   }
 
-  .toolbar-row{
-    display:flex;
-    gap: 10px;
-    flex-wrap: wrap;
+  .settings-menu-wrapper{
+    position: relative;
+    display: inline-block;
+    margin-bottom: 26px;
   }
+
+  .settings-gear-btn{
+    background: #140a28;
+    border: 2px solid var(--yellow);
+    border-radius: 50%;
+    width: 46px;
+    height: 46px;
+    font-size: 1.3rem;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 3px 3px 0 rgba(249,240,2,.35);
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .settings-gear-btn:hover{ transform: rotate(25deg); box-shadow: 4px 4px 0 rgba(249,240,2,.5); }
+  .settings-gear-btn:focus-visible{ outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+  .settings-dropdown{
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: #140a28;
+    border: 2px solid var(--yellow);
+    border-radius: var(--radius);
+    padding: 12px;
+    box-shadow: 4px 4px 0 rgba(249,240,2,.3), 0 10px 30px rgba(0,0,0,.5);
+    min-width: 230px;
+  }
+  .settings-dropdown .ghost-btn{ width: 100%; text-align: left; }
 
   .rules-screen{
     width: 100%;
@@ -1058,13 +1090,16 @@
 
   <div class="game-area hidden" id="gameArea">
 
-  <div class="editor-toggle-row toolbar-row">
-    <button class="ghost-btn" id="editorToggle">✎ GERER MES CRITIQUES</button>
-    <button class="ghost-btn" id="musicToggle">🔇 MUSIQUE</button>
-    <button class="ghost-btn" id="changeLevelBtn">🎚 CHANGER DE NIVEAU</button>
-    <button class="ghost-btn" id="viewLeaderboardBtn">🏆 VOIR LE CLASSEMENT</button>
-    <button class="ghost-btn" id="myStatsBtn">🏆 MON CLASSEMENT</button>
-    <button class="ghost-btn" id="rulesToggleBtn">📜 REGLES</button>
+  <div class="settings-menu-wrapper">
+    <button class="settings-gear-btn" id="settingsGearBtn" aria-label="Ouvrir le menu réglages">⚙️</button>
+    <div class="settings-dropdown hidden" id="settingsDropdown">
+      <button class="ghost-btn" id="editorToggle">✎ GERER MES CRITIQUES</button>
+      <button class="ghost-btn" id="musicToggle">🔇 MUSIQUE</button>
+      <button class="ghost-btn" id="changeLevelBtn">🎚 CHANGER DE NIVEAU</button>
+      <button class="ghost-btn" id="viewLeaderboardBtn">🏆 VOIR LE CLASSEMENT</button>
+      <button class="ghost-btn" id="myStatsBtn">🏆 MON CLASSEMENT</button>
+      <button class="ghost-btn" id="rulesToggleBtn">📜 REGLES</button>
+    </div>
   </div>
 
   <section class="editor-panel hidden" id="leaderboardPanel" aria-label="Classement complet">
@@ -1466,6 +1501,8 @@
   const pseudoForm = document.getElementById('pseudoForm');
   const pseudoInput = document.getElementById('pseudoInput');
   const changeLevelBtn = document.getElementById('changeLevelBtn');
+  const settingsGearBtn = document.getElementById('settingsGearBtn');
+  const settingsDropdown = document.getElementById('settingsDropdown');
   const rulesScreen = document.getElementById('rulesScreen');
   const rulesToggleBtn = document.getElementById('rulesToggleBtn');
   const closeRulesBtn = document.getElementById('closeRulesBtn');
@@ -1803,6 +1840,17 @@
     gameArea.classList.add('hidden');
     renderLevelList();
     levelScreen.classList.remove('hidden');
+  });
+
+  settingsGearBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    settingsDropdown.classList.toggle('hidden');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (settingsDropdown.classList.contains('hidden')) return;
+    if (settingsDropdown.contains(e.target) || e.target === settingsGearBtn) return;
+    settingsDropdown.classList.add('hidden');
   });
 
   rulesToggleBtn.addEventListener('click', () => {
