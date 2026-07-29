@@ -437,12 +437,61 @@
     box-shadow: 0 6px 0 var(--purple), 0 10px 16px rgba(0,0,0,.45);
     transition: transform .1s ease, box-shadow .1s ease;
     clip-path: polygon(0 0, 100% 0, 100% 78%, 95% 100%, 0 100%);
-    animation: slam-in-left .4s cubic-bezier(.2,1.4,.4,1) both;
   }
-  .mode-select-btn:nth-child(2){ animation-name: slam-in-right; animation-delay: .08s; }
   .mode-select-btn:hover{ transform: translateY(-2px); box-shadow: 0 8px 0 var(--purple), 0 13px 18px rgba(0,0,0,.5); }
   .mode-select-btn:active{ transform: translateY(4px); box-shadow: 0 2px 0 var(--purple), 0 3px 8px rgba(0,0,0,.4); }
   .mode-select-btn:focus-visible{ outline: 2px solid var(--yellow); outline-offset: 2px; }
+
+  .mode-icon{
+    display: inline-block;
+    margin-right: 8px;
+  }
+  .mode-select-btn:hover .icon-clock{
+    animation: chrono-tick .6s ease-in-out infinite;
+  }
+  @keyframes chrono-tick{
+    0%, 100%{ transform: rotate(-14deg); }
+    50%{ transform: rotate(14deg); }
+  }
+
+  .mode-select-btn:hover .icon-clap{
+    animation: clap-snap .5s ease-in-out infinite;
+  }
+  @keyframes clap-snap{
+    0%, 100%{ transform: rotate(0deg); }
+    25%{ transform: rotate(-16deg); }
+    50%{ transform: rotate(0deg); }
+  }
+
+  .mode-text{
+    display: inline-block;
+    vertical-align: bottom;
+  }
+  .mode-text.typewriter{
+    overflow: hidden;
+    white-space: nowrap;
+    width: 14ch;
+  }
+  .mode-select-btn:hover .mode-text.typewriter{
+    animation: typewriter-reveal .9s steps(14, end) infinite,
+               typewriter-caret .5s step-end infinite;
+    border-right: 2px solid var(--cyan);
+  }
+  @keyframes typewriter-reveal{
+    0%{ width: 0; }
+    70%{ width: 14ch; }
+    100%{ width: 14ch; }
+  }
+  @keyframes typewriter-caret{
+    0%, 100%{ border-color: transparent; }
+    50%{ border-color: var(--cyan); }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .mode-select-btn:hover .icon-clock,
+    .mode-select-btn:hover .icon-clap,
+    .mode-select-btn:hover .mode-text.typewriter{ animation: none !important; }
+  }
 
   .back-btn{
     margin-top: 14px;
@@ -740,6 +789,25 @@
       0 0 10px rgba(176,38,255,.6),
       8px 8px 0 rgba(176,38,255,.25),
       0 22px 40px rgba(0,0,0,.5);
+  }
+
+  .ticket.rush-shaking{
+    animation: rush-shake .5s linear infinite;
+    border-color: var(--wrong);
+    box-shadow:
+      0 0 calc(var(--shake-intensity, 0) * 18px) rgba(255,56,96, calc(var(--shake-intensity, 0) * 0.7)),
+      8px 8px 0 rgba(255,56,96, calc(var(--shake-intensity, 0) * 0.25)),
+      0 22px 40px rgba(0,0,0,.5);
+  }
+  @keyframes rush-shake{
+    0%, 100%{ transform: translate(0, 0) rotate(0deg); }
+    20%{ transform: translate(calc(var(--shake-intensity, 0) * -2.5px), calc(var(--shake-intensity, 0) * 1.5px)) rotate(calc(var(--shake-intensity, 0) * -0.35deg)); }
+    40%{ transform: translate(calc(var(--shake-intensity, 0) * 2.5px), calc(var(--shake-intensity, 0) * -1.5px)) rotate(calc(var(--shake-intensity, 0) * 0.35deg)); }
+    60%{ transform: translate(calc(var(--shake-intensity, 0) * -2px), calc(var(--shake-intensity, 0) * 1px)) rotate(calc(var(--shake-intensity, 0) * -0.25deg)); }
+    80%{ transform: translate(calc(var(--shake-intensity, 0) * 2px), calc(var(--shake-intensity, 0) * -1px)) rotate(calc(var(--shake-intensity, 0) * 0.25deg)); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .ticket.rush-shaking{ animation: none; }
   }
 
   .ticket-label{
@@ -1275,6 +1343,56 @@
   }
 
   #importInput{ display:none; }
+
+  /* ---------- Optimisations pour petits écrans (téléphones) ---------- */
+  @media (max-width: 480px){
+    body{ padding: 20px 12px 48px; }
+
+    h1.title{ font-size: clamp(1.8rem, 11vw, 2.6rem); }
+
+    .settings-dropdown{
+      min-width: 200px;
+      max-width: calc(100vw - 40px);
+      left: 0;
+    }
+
+    .top-bar-row{ gap: 8px; }
+    .settings-gear-btn, .back-to-level-btn{
+      width: 40px;
+      height: 40px;
+      font-size: 1.1rem;
+    }
+
+    .mode-select-btn{ font-size: 1.25rem; padding: 14px 12px; }
+    .mode-text.typewriter{ width: 11.5ch; }
+
+    .level-btn{
+      flex-wrap: wrap;
+      row-gap: 4px;
+      font-size: 1.15rem;
+    }
+    .level-count{ flex-basis: 100%; }
+
+    .lives-label{ font-size: 0.5rem; }
+    .rush-gauge-row{ flex-wrap: wrap; row-gap: 6px; }
+    .pause-btn{ font-size: 0.75rem; }
+
+    .now-playing{
+      left: 8px;
+      bottom: 8px;
+      padding: 8px 10px;
+      max-width: min(70vw, 220px);
+    }
+    .now-playing-title{ font-size: 0.95rem; }
+    .now-playing-artist{ font-size: 0.8rem; }
+
+    blockquote.review, .pause-message{ font-size: 1.25rem; min-height: 76px; }
+
+    .answer-form{ flex-direction: column; }
+    .answer-input, .answer-submit-btn{ width: 100%; }
+
+    .leaderboard-item{ font-size: 1rem; }
+  }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -1311,6 +1429,7 @@
       <div class="settings-dropdown hidden" id="settingsDropdown">
         <button class="ghost-btn" id="editorToggle">✎ GERER MES CRITIQUES</button>
         <button class="ghost-btn" id="musicToggle">🔇 MUSIQUE</button>
+        <button class="ghost-btn playing" id="sfxToggle">🔊 SONS</button>
         <button class="ghost-btn" id="viewLeaderboardBtn">🏆 VOIR LE CLASSEMENT</button>
         <button class="ghost-btn" id="myStatsBtn">🏆 MON CLASSEMENT</button>
         <button class="ghost-btn" id="rulesToggleBtn">📜 REGLES</button>
@@ -1365,8 +1484,8 @@
       <p class="hint" id="levelScreenHint">Sélectionne un mode de jeu.</p>
 
       <div class="mode-select-view" id="modeSelectView">
-        <button type="button" class="mode-select-btn" id="chooseClassicBtn">🎬 MODE CLASSIQUE</button>
-        <button type="button" class="mode-select-btn" id="chooseRushBtn">⏱ MODE RUSH</button>
+        <button type="button" class="mode-select-btn" id="chooseClassicBtn"><span class="mode-icon icon-clap">🎬</span><span class="mode-text typewriter">MODE CLASSIQUE</span></button>
+        <button type="button" class="mode-select-btn" id="chooseRushBtn"><span class="mode-icon icon-clock">⏱</span><span class="mode-text">MODE RUSH</span></button>
       </div>
 
       <div class="mode-panel hidden" id="classicModePanel">
@@ -1565,6 +1684,8 @@
   </div>
 
 <script>
+  let sfxEnabled = true;
+
   (function powerOnTV(){
     const tv = document.getElementById('tvOverlay');
     if (!tv) return;
@@ -1581,6 +1702,7 @@
   })();
 
   function playTVFadeSound(){
+    if (!sfxEnabled) return;
     try {
       initAudio();
       if (!audioCtx) return;
@@ -1603,6 +1725,7 @@
   }
 
   function playTVOnSound(){
+    if (!sfxEnabled) return;
     try {
       initAudio();
       if (!audioCtx) return;
@@ -1808,6 +1931,7 @@
       onRushTimeout();
     };
     rushGaugeFill.addEventListener('transitionend', rushTimeoutHandler, { once: true });
+    startRushShakeLoop();
   }
 
   function stopRushGauge(){
@@ -1818,10 +1942,42 @@
     }
     rushGaugeFill.style.transition = 'none';
     rushGaugeFill.style.width = '100%';
+    cancelRushShakeLoop();
   }
 
   let rushPaused = false;
   let rushRemainingFraction = 1;
+  let rushShakeRAF = null;
+
+  function startRushShakeLoop(){
+    if (rushShakeRAF) return;
+    const tick = () => {
+      if (!rushActive || rushPaused){ rushShakeRAF = null; return; }
+      const track = rushGaugeFill.parentElement;
+      const trackWidth = track.offsetWidth;
+      const currentWidth = rushGaugeFill.getBoundingClientRect().width;
+      const fraction = trackWidth > 0 ? Math.max(0, Math.min(1, currentWidth / trackWidth)) : 0;
+      const urgency = 1 - fraction; // 0 = temps large, 1 = plus que quelques instants
+
+      if (urgency > 0.05){
+        quizCard.classList.add('rush-shaking');
+        quizCard.style.setProperty('--shake-intensity', urgency.toFixed(3));
+      } else {
+        quizCard.classList.remove('rush-shaking');
+      }
+      rushShakeRAF = requestAnimationFrame(tick);
+    };
+    rushShakeRAF = requestAnimationFrame(tick);
+  }
+
+  function cancelRushShakeLoop(){
+    if (rushShakeRAF){
+      cancelAnimationFrame(rushShakeRAF);
+      rushShakeRAF = null;
+    }
+    quizCard.classList.remove('rush-shaking');
+    quizCard.style.setProperty('--shake-intensity', '0');
+  }
 
   function pauseRush(){
     if (!rushActive || rushPaused) return;
@@ -1836,6 +1992,8 @@
       rushTimeoutHandler = null;
     }
     rushPaused = true;
+    if (rushShakeRAF){ cancelAnimationFrame(rushShakeRAF); rushShakeRAF = null; }
+    quizCard.classList.remove('rush-shaking');
   }
 
   function resumeRush(){
@@ -1850,6 +2008,7 @@
     };
     rushGaugeFill.addEventListener('transitionend', rushTimeoutHandler, { once: true });
     rushPaused = false;
+    startRushShakeLoop();
   }
 
   const PAUSE_MESSAGES = [
@@ -1893,6 +2052,7 @@
   function onRushTimeout(){
     if (questionAnswered) return;
     questionAnswered = true;
+    cancelRushShakeLoop();
     answerInput.disabled = true;
     answerSubmitBtn.disabled = true;
     pauseBtn.disabled = true;
@@ -1952,6 +2112,17 @@
     rushModePanel.classList.add('hidden');
     levelScreenHint.textContent = 'Sélectionne un mode de jeu.';
     resetTheme();
+
+    chooseClassicBtn.classList.remove('level-btn-enter-left', 'level-btn-enter-right');
+    chooseRushBtn.classList.remove('level-btn-enter-left', 'level-btn-enter-right');
+    void chooseClassicBtn.offsetWidth; // force le reflow pour pouvoir rejouer l'animation
+    chooseClassicBtn.classList.add('level-btn-enter-left');
+    chooseRushBtn.classList.add('level-btn-enter-right');
+    chooseRushBtn.style.animationDelay = '.08s';
+    setTimeout(() => {
+      chooseClassicBtn.classList.remove('level-btn-enter-left');
+      chooseRushBtn.classList.remove('level-btn-enter-right');
+    }, 600);
   }
 
   chooseClassicBtn.addEventListener('click', () => {
@@ -1973,6 +2144,13 @@
       levelScreenHint.textContent = 'Choisis ton niveau Rush.';
       applyTheme('inferno');
     }, 220);
+  });
+
+  chooseRushBtn.addEventListener('mouseenter', () => {
+    if (!modeSelectView.classList.contains('hidden')) applyTheme('inferno');
+  });
+  chooseRushBtn.addEventListener('mouseleave', () => {
+    if (!modeSelectView.classList.contains('hidden')) resetTheme();
   });
 
   backFromClassicBtn.addEventListener('click', showModeSelect);
@@ -2873,6 +3051,19 @@
 
   // ---------- Moteur audio 8-bit (généré en direct, aucun fichier importé) ----------
   const musicToggle = document.getElementById('musicToggle');
+  const sfxToggle = document.getElementById('sfxToggle');
+  sfxToggle.addEventListener('click', () => {
+    sfxEnabled = !sfxEnabled;
+    if (sfxEnabled){
+      sfxToggle.textContent = '🔊 SONS';
+      sfxToggle.classList.add('playing');
+      initAudio(); // relance le contexte audio si besoin, pour un retour de son immédiat
+      playSelectSound();
+    } else {
+      sfxToggle.textContent = '🔇 SONS';
+      sfxToggle.classList.remove('playing');
+    }
+  });
 
   const NOTES = {
     G2:98.00, A2:110.00,
@@ -2915,7 +3106,10 @@
   let musicTimer = null;
 
   function initAudio(){
-    if (audioCtx) return;
+    if (audioCtx){
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return;
+    }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     audioCtx = new AC();
@@ -3157,6 +3351,7 @@
   });
 
   function playCorrectSound(){
+    if (!sfxEnabled) return;
     initAudio();
     if (!audioCtx) return;
     const t = audioCtx.currentTime;
@@ -3166,6 +3361,7 @@
   }
 
   function playWrongSound(){
+    if (!sfxEnabled) return;
     initAudio();
     if (!audioCtx) return;
     const t = audioCtx.currentTime;
@@ -3174,6 +3370,7 @@
   }
 
   function playSelectSound(){
+    if (!sfxEnabled) return;
     initAudio();
     if (!audioCtx) return;
     const t = audioCtx.currentTime;
