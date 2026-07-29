@@ -538,8 +538,29 @@
     border-color: transparent;
   }
   .level-name{
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
     display: flex;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
+    text-align: center;
+    max-width: calc(100% - 90px);
+    pointer-events: none;
+    text-transform: uppercase;
+  }
+  .level-name-sub{
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    font-style: italic;
+    line-height: 1.2;
+  }
+  .level-name-main{
+    line-height: 1.2;
+    text-transform: uppercase;
   }
 
   /* --- Animations de clic (une par niveau, au choix de l'admin) --- */
@@ -1940,6 +1961,16 @@
     return Math.max(RUSH_MIN_TIME, RUSH_INITIAL_TIME - questionIndex * RUSH_DECREMENT);
   }
 
+  let rushTotalTime = 0;
+  let rushSegmentStart = null;
+
+  function accumulateRushTime(){
+    if (rushSegmentStart !== null){
+      rushTotalTime += (performance.now() - rushSegmentStart) / 1000;
+      rushSegmentStart = null;
+    }
+  }
+
   function startRushGauge(){
     rushActive = true;
     const duration = getRushDuration(current);
@@ -1955,9 +1986,11 @@
     };
     rushGaugeFill.addEventListener('transitionend', rushTimeoutHandler, { once: true });
     startRushShakeLoop();
+    rushSegmentStart = performance.now();
   }
 
   function stopRushGauge(){
+    accumulateRushTime();
     rushActive = false;
     if (rushTimeoutHandler){
       rushGaugeFill.removeEventListener('transitionend', rushTimeoutHandler);
@@ -2004,6 +2037,7 @@
 
   function pauseRush(){
     if (!rushActive || rushPaused) return;
+    accumulateRushTime();
     const track = rushGaugeFill.parentElement;
     const trackWidth = track.offsetWidth;
     const currentWidth = rushGaugeFill.getBoundingClientRect().width;
@@ -2032,6 +2066,7 @@
     rushGaugeFill.addEventListener('transitionend', rushTimeoutHandler, { once: true });
     rushPaused = false;
     startRushShakeLoop();
+    rushSegmentStart = performance.now();
   }
 
   const PAUSE_MESSAGES = [
@@ -2450,7 +2485,9 @@
           bestTotal: d.bestTotal || 1,
           gamesPlayed: d.gamesPlayed || 1,
           lastScore: d.lastScore,
-          lastTotal: d.lastTotal
+          lastTotal: d.lastTotal,
+          bestTime: d.bestTime != null ? d.bestTime : null,
+          lastTime: d.lastTime != null ? d.lastTime : null
         });
       });
       renderLeaderboard(highlight, filterLevel);
@@ -2465,18 +2502,20 @@
 
   // Une fiche par pseudo ET par niveau : chaque partie met à jour les stats
   // de CE niveau précisément, pour avoir un classement séparé par niveau/mode.
-  async function upsertPlayerStatsCloud(name, score, total, level){
+  async function upsertPlayerStatsCloud(name, score, total, level, time){
     if (!firebaseReady) return null;
     const key = scoreKey(name, level);
     if (!normalize(name)) return null;
     try {
       const ref = db.collection('scores').doc(key);
       const doc = await ref.get();
+      const hasTime = time != null;
 
       if (doc.exists){
         const d = doc.data();
         const gamesPlayed = (d.gamesPlayed || 0) + 1;
         const isNewBest = (score / total) > ((d.bestScore || 0) / (d.bestTotal || 1));
+        const isNewBestTime = hasTime && (d.bestTime == null || time < d.bestTime);
         const updated = {
           name: name,
           level: level,
@@ -2487,6 +2526,10 @@
           lastTotal: total,
           lastDate: new Date().toISOString()
         };
+        if (hasTime){
+          updated.bestTime = isNewBestTime ? time : (d.bestTime != null ? d.bestTime : time);
+          updated.lastTime = time;
+        }
         await ref.set(updated, { merge: true });
         return { key, ...updated };
       } else {
@@ -2500,6 +2543,10 @@
           lastTotal: total,
           lastDate: new Date().toISOString()
         };
+        if (hasTime){
+          created.bestTime = time;
+          created.lastTime = time;
+        }
         await ref.set(created);
         return { key, ...created };
       }
@@ -2509,11 +2556,13 @@
   }
 
   // Repli local (si Firebase n'est pas configuré) : même logique, en mémoire.
-  function upsertPlayerStatsLocal(name, score, total, level){
+  function upsertPlayerStatsLocal(name, score, total, level, time){
     const key = scoreKey(name, level);
+    const hasTime = time != null;
     let entry = leaderboard.find(e => e.key === key);
     if (!entry){
       entry = { key, name, level, bestScore: score, bestTotal: total, gamesPlayed: 1, lastScore: score, lastTotal: total };
+      if (hasTime){ entry.bestTime = time; entry.lastTime = time; }
       leaderboard.push(entry);
     } else {
       entry.gamesPlayed++;
@@ -2523,6 +2572,10 @@
       if ((score / total) > (entry.bestScore / entry.bestTotal)){
         entry.bestScore = score;
         entry.bestTotal = total;
+      }
+      if (hasTime){
+        entry.lastTime = time;
+        if (entry.bestTime == null || time < entry.bestTime) entry.bestTime = time;
       }
     }
     return entry;
@@ -2626,7 +2679,19 @@
 
       const nameSpan = document.createElement('span');
       nameSpan.className = 'level-name';
-      nameSpan.textContent = level.name;
+      const parenMatch = level.name.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+      if (parenMatch){
+        const subtitleSpan = document.createElement('span');
+        subtitleSpan.className = 'level-name-sub';
+        subtitleSpan.textContent = `(${parenMatch[2].trim()})`;
+        const mainSpan = document.createElement('span');
+        mainSpan.className = 'level-name-main';
+        mainSpan.textContent = parenMatch[1].trim();
+        nameSpan.appendChild(mainSpan);
+        nameSpan.appendChild(subtitleSpan);
+      } else {
+        nameSpan.textContent = level.name;
+      }
       btn.appendChild(nameSpan);
 
       const newCount = countNewCritiques(level.name);
@@ -2693,6 +2758,8 @@
   function selectLevel(level){
     currentLevel = level;
     markLevelSeen(level);
+    rushTotalTime = 0;
+    rushSegmentStart = null;
     const levelObj = findLevel(level);
     applyTheme(levelObj ? levelObj.theme : 'default');
     levelScreen.classList.add('hidden');
@@ -2946,9 +3013,16 @@
 
   function renderLeaderboard(highlight, filterLevel){
     const pool = filterLevel ? leaderboard.filter(e => e.level === filterLevel) : leaderboard.slice();
-    const sorted = pool.sort((a, b) =>
-      (b.bestScore / b.bestTotal) - (a.bestScore / a.bestTotal) || b.bestScore - a.bestScore
-    );
+    const isRush = filterLevel && getLevelMode(filterLevel) === 'rush';
+
+    const sorted = pool.sort((a, b) => {
+      if (isRush){
+        const at = a.bestTime != null ? a.bestTime : Infinity;
+        const bt = b.bestTime != null ? b.bestTime : Infinity;
+        return at - bt;
+      }
+      return (b.bestScore / b.bestTotal) - (a.bestScore / a.bestTotal) || b.bestScore - a.bestScore;
+    });
     leaderboardList.innerHTML = '';
 
     if (sorted.length === 0){
@@ -2965,7 +3039,9 @@
       const left = document.createElement('span');
       left.textContent = `#${idx + 1} ${entry.name}`;
       const right = document.createElement('span');
-      right.textContent = `${entry.bestScore} / ${entry.bestTotal}`;
+      right.textContent = (isRush && entry.bestTime != null)
+        ? formatTime(entry.bestTime)
+        : `${entry.bestScore} / ${entry.bestTotal}`;
       row.appendChild(left);
       row.appendChild(right);
       leaderboardList.appendChild(row);
@@ -2974,10 +3050,12 @@
     if (highlight){
       const rank = sorted.findIndex(isMine) + 1;
       if (rank > 0) rankLine.textContent = `TU ES CLASSE #${rank} SUR ${sorted.length} (${filterLevel}) !`;
-      statsLine.textContent =
-        `Meilleur score : ${highlight.bestScore} / ${highlight.bestTotal} — ` +
-        `Dernier essai : ${highlight.lastScore} / ${highlight.lastTotal} — ` +
-        `${highlight.gamesPlayed} partie${highlight.gamesPlayed > 1 ? 's' : ''} jouée${highlight.gamesPlayed > 1 ? 's' : ''}`;
+      statsLine.textContent = (isRush && highlight.bestTime != null)
+        ? `Meilleur temps : ${formatTime(highlight.bestTime)} — Dernier temps : ${highlight.lastTime != null ? formatTime(highlight.lastTime) : '—'} — ` +
+          `${highlight.gamesPlayed} partie${highlight.gamesPlayed > 1 ? 's' : ''} jouée${highlight.gamesPlayed > 1 ? 's' : ''}`
+        : `Meilleur score : ${highlight.bestScore} / ${highlight.bestTotal} — ` +
+          `Dernier essai : ${highlight.lastScore} / ${highlight.lastTotal} — ` +
+          `${highlight.gamesPlayed} partie${highlight.gamesPlayed > 1 ? 's' : ''} jouée${highlight.gamesPlayed > 1 ? 's' : ''}`;
     }
   }
 
@@ -3001,20 +3079,28 @@
   function renderAdminLeaderboard(){
     const filterLevel = leaderboardLevelSelect.value;
     const highlightKey = leaderboardShowMine ? scoreKey(playerName || '', filterLevel) : null;
+    const isRush = filterLevel && getLevelMode(filterLevel) === 'rush';
 
     const pool = leaderboard.filter(e => e.level === filterLevel);
-    const sorted = pool.sort((a, b) =>
-      (b.bestScore / b.bestTotal) - (a.bestScore / a.bestTotal) || b.bestScore - a.bestScore
-    );
+    const sorted = pool.sort((a, b) => {
+      if (isRush){
+        const at = a.bestTime != null ? a.bestTime : Infinity;
+        const bt = b.bestTime != null ? b.bestTime : Infinity;
+        return at - bt;
+      }
+      return (b.bestScore / b.bestTotal) - (a.bestScore / a.bestTotal) || b.bestScore - a.bestScore;
+    });
     adminLeaderboardList.innerHTML = '';
 
     if (leaderboardShowMine){
       const mine = sorted.find(e => e.key === highlightKey);
       if (mine){
         const rank = sorted.indexOf(mine) + 1;
-        myStatsSummary.textContent =
-          `TOI (${mine.name}) : #${rank} sur ${sorted.length} — Meilleur score : ${mine.bestScore} / ${mine.bestTotal} — ` +
-          `${mine.gamesPlayed} partie${mine.gamesPlayed > 1 ? 's' : ''} jouée${mine.gamesPlayed > 1 ? 's' : ''}`;
+        myStatsSummary.textContent = (isRush && mine.bestTime != null)
+          ? `TOI (${mine.name}) : #${rank} sur ${sorted.length} — Meilleur temps : ${formatTime(mine.bestTime)} — ` +
+            `${mine.gamesPlayed} partie${mine.gamesPlayed > 1 ? 's' : ''} jouée${mine.gamesPlayed > 1 ? 's' : ''}`
+          : `TOI (${mine.name}) : #${rank} sur ${sorted.length} — Meilleur score : ${mine.bestScore} / ${mine.bestTotal} — ` +
+            `${mine.gamesPlayed} partie${mine.gamesPlayed > 1 ? 's' : ''} jouée${mine.gamesPlayed > 1 ? 's' : ''}`;
       } else {
         myStatsSummary.textContent = "Tu n'as pas encore de partie enregistrée sous ce pseudo, pour ce niveau — joue une partie pour apparaître ici !";
       }
@@ -3034,7 +3120,9 @@
       const left = document.createElement('span');
       left.textContent = `#${idx + 1} ${entry.name}`;
       const right = document.createElement('span');
-      right.textContent = `${entry.bestScore} / ${entry.bestTotal} (${entry.gamesPlayed} partie${entry.gamesPlayed > 1 ? 's' : ''})`;
+      right.textContent = (isRush && entry.bestTime != null)
+        ? `${formatTime(entry.bestTime)} (${entry.gamesPlayed} partie${entry.gamesPlayed > 1 ? 's' : ''})`
+        : `${entry.bestScore} / ${entry.bestTotal} (${entry.gamesPlayed} partie${entry.gamesPlayed > 1 ? 's' : ''})`;
       row.appendChild(left);
       row.appendChild(right);
       adminLeaderboardList.appendChild(row);
@@ -3101,7 +3189,7 @@
         if (!valid) throw new Error('format');
         data.forEach(e => {
           const level = e.level || 'Facile';
-          leaderboard.push({
+          const entry = {
             key: e.key || scoreKey(e.name, level),
             name: e.name,
             level: level,
@@ -3110,7 +3198,10 @@
             gamesPlayed: e.gamesPlayed || 1,
             lastScore: e.lastScore != null ? e.lastScore : e.bestScore,
             lastTotal: e.lastTotal != null ? e.lastTotal : e.bestTotal
-          });
+          };
+          if (e.bestTime != null) entry.bestTime = e.bestTime;
+          if (e.lastTime != null) entry.lastTime = e.lastTime;
+          leaderboard.push(entry);
         });
         renderAdminLeaderboard();
       } catch (err){
@@ -3787,7 +3878,15 @@
     }
   }
 
+  function formatTime(seconds){
+    const s = Math.max(0, seconds);
+    const mins = Math.floor(s / 60);
+    const secs = (s - mins * 60).toFixed(1);
+    return mins > 0 ? `${mins}min ${secs}s` : `${secs}s`;
+  }
+
   function showResult(){
+    accumulateRushTime(); // comptabilise le dernier segment si la partie s'est terminée sans repasser par renderQuestion
     quizCard.classList.add('hidden');
     resultCard.classList.remove('hidden');
 
@@ -3803,10 +3902,14 @@
       starsEl.appendChild(span);
     }
 
+    const isRush = getLevelMode(currentLevel) === 'rush';
+    const timeTaken = isRush ? Math.round(rushTotalTime * 10) / 10 : null;
+
     document.getElementById('resultHeader').textContent = 'RECAP';
     document.getElementById('resultLevel').textContent = level.name;
-    document.getElementById('resultScore').textContent =
-      `${score} / ${QUESTIONS.length} FILMS DEVINES`;
+    document.getElementById('resultScore').textContent = isRush
+      ? `${score} / ${QUESTIONS.length} FILMS DEVINES — TEMPS : ${formatTime(timeTaken)}`
+      : `${score} / ${QUESTIONS.length} FILMS DEVINES`;
 
     if (isAdminUnlocked){
       rankLine.textContent = "MODE ADMIN — CETTE PARTIE N'EST PAS COMPTABILISEE DANS LE CLASSEMENT.";
@@ -3814,10 +3917,10 @@
       renderLeaderboard(null, currentLevel);
     } else {
       const name = playerName || 'ANONYME';
-      const localEntry = upsertPlayerStatsLocal(name, score, QUESTIONS.length, currentLevel);
+      const localEntry = upsertPlayerStatsLocal(name, score, QUESTIONS.length, currentLevel, timeTaken);
       renderLeaderboard(localEntry, currentLevel);
 
-      upsertPlayerStatsCloud(name, score, QUESTIONS.length, currentLevel).then(cloudEntry => {
+      upsertPlayerStatsCloud(name, score, QUESTIONS.length, currentLevel, timeTaken).then(cloudEntry => {
         if (cloudEntry) loadLeaderboardFromCloud(cloudEntry, currentLevel);
       });
     }
