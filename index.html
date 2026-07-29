@@ -600,8 +600,28 @@
     font-family: 'VT323', monospace;
     font-size: 0.95rem;
     color: var(--muted);
-    margin-top: 6px;
+    margin-left: auto;
+    padding-left: 10px;
     letter-spacing: 0;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .new-badge{
+    font-family: 'VT323', monospace;
+    font-size: 0.85rem;
+    color: var(--yellow);
+    text-shadow: 0 0 6px rgba(249,240,2,.6);
+    white-space: nowrap;
+    padding-left: 10px;
+    animation: new-badge-pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes new-badge-pulse{
+    0%, 100%{ opacity: 1; }
+    50%{ opacity: .55; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .new-badge{ animation: none; }
   }
 
   .rank-line{
@@ -1152,6 +1172,39 @@
     box-shadow: 0 0 12px rgba(0,240,255,.4), 8px 8px 0 rgba(0,240,255,.15);
   }
 
+  .editor-panel-wide{
+    max-width: 1180px;
+  }
+  .editor-columns{
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    overflow-x: auto;
+    padding-bottom: 6px;
+  }
+  .editor-column{
+    flex: 1 1 260px;
+    min-width: 260px;
+    max-height: 72vh;
+    overflow-y: auto;
+    padding-right: 6px;
+  }
+  .editor-column .custom-list{
+    margin-top: 0;
+    border-top: none;
+    padding-top: 0;
+  }
+  @media (max-width: 900px){
+    .editor-columns{
+      flex-direction: column;
+    }
+    .editor-column{
+      max-height: none;
+      overflow-y: visible;
+      width: 100%;
+    }
+  }
+
   .editor-panel h2{
     font-family:'Press Start 2P', monospace;
     letter-spacing: .02em;
@@ -1377,7 +1430,7 @@
     <div class="settings-menu-wrapper">
       <button class="settings-gear-btn" id="settingsGearBtn" aria-label="Ouvrir le menu réglages">⚙️</button>
       <div class="settings-dropdown hidden" id="settingsDropdown">
-        <button class="ghost-btn" id="editorToggle">✎ GERER MES CRITIQUES</button>
+        <button class="ghost-btn" id="editorToggle">✎ GERER</button>
         <button class="ghost-btn" id="musicToggle">🔇 MUSIQUE</button>
         <button class="ghost-btn playing" id="sfxToggle">🔊 SONS</button>
         <button class="ghost-btn" id="viewLeaderboardBtn">🏆 VOIR LE CLASSEMENT</button>
@@ -1464,70 +1517,82 @@
     </div>
   </section>
 
-  <section class="editor-panel hidden" id="editorPanel" aria-label="Gestion des critiques personnalisées">
-    <h2>AJOUTER UNE CRITIQUE</h2>
-    <p class="hint">Écris une critique assassine, propose 4 films possibles et coche le bon.</p>
+  <section class="editor-panel editor-panel-wide hidden" id="editorPanel" aria-label="Gestion des critiques personnalisées">
+    <div class="editor-columns">
 
-    <form id="reviewForm">
-      <div class="field">
-        <label for="reviewInput">La critique</label>
-        <textarea id="reviewInput" rows="3" placeholder="Ex : Un homme refuse de vieillir et embête tout un village avec une potion magique."></textarea>
+      <div class="editor-column">
+        <h2>AJOUTER UNE CRITIQUE</h2>
+        <p class="hint">Écris une critique assassine, propose 4 films possibles et coche le bon.</p>
+
+        <form id="reviewForm">
+          <div class="field">
+            <label for="reviewInput">La critique</label>
+            <textarea id="reviewInput" rows="3" placeholder="Ex : Un homme refuse de vieillir et embête tout un village avec une potion magique."></textarea>
+          </div>
+
+          <div class="field">
+            <label for="answerField">Le titre du film (bonne réponse)</label>
+            <input type="text" id="answerField" placeholder="Ex : Astérix et Obélix : Mission Cléopâtre">
+          </div>
+
+          <div class="field">
+            <label for="aliasesField">Autres réponses acceptées (facultatif, séparées par des virgules)</label>
+            <input type="text" id="aliasesField" placeholder="Ex : Mission Cléopâtre, Astérix Mission Cléopâtre">
+          </div>
+
+          <div class="field">
+            <label for="levelSelect">Niveau</label>
+            <div class="option-fields" style="grid-template-columns: 1fr auto;">
+              <select id="levelSelect"></select>
+              <button type="button" class="ghost-btn" id="newLevelBtn">+ NOUVEAU NIVEAU</button>
+            </div>
+          </div>
+
+          <div class="editor-actions">
+            <button type="submit" class="primary-btn" id="submitBtn">AJOUTER</button>
+            <button type="button" class="ghost-btn hidden" id="cancelEditBtn">ANNULER</button>
+          </div>
+          <div class="editor-form-msg" id="formMsg"></div>
+        </form>
       </div>
 
-      <div class="field">
-        <label for="answerField">Le titre du film (bonne réponse)</label>
-        <input type="text" id="answerField" placeholder="Ex : Astérix et Obélix : Mission Cléopâtre">
-      </div>
-
-      <div class="field">
-        <label for="aliasesField">Autres réponses acceptées (facultatif, séparées par des virgules)</label>
-        <input type="text" id="aliasesField" placeholder="Ex : Mission Cléopâtre, Astérix Mission Cléopâtre">
-      </div>
-
-      <div class="field">
-        <label for="levelSelect">Niveau</label>
-        <div class="option-fields" style="grid-template-columns: 1fr auto;">
-          <select id="levelSelect"></select>
-          <button type="button" class="ghost-btn" id="newLevelBtn">+ NOUVEAU NIVEAU</button>
+      <div class="editor-column">
+        <div class="custom-list">
+          <h3>MODIFIER LES CRITIQUES</h3>
+          <p class="hint">Toutes les critiques du quiz — les tiennes et celles d'origine. Clique sur MODIF. pour changer le texte, les propositions ou la bonne réponse.</p>
+          <div id="customListBody"></div>
         </div>
       </div>
 
-      <div class="editor-actions">
-        <button type="submit" class="primary-btn" id="submitBtn">AJOUTER</button>
-        <button type="button" class="ghost-btn hidden" id="cancelEditBtn">ANNULER</button>
+      <div class="editor-column">
+        <div class="custom-list">
+          <h3>GERER LES NIVEAUX</h3>
+          <p class="hint">Image (URL) et animation de clic pour chaque niveau.</p>
+          <div id="levelManageList"></div>
+        </div>
       </div>
-      <div class="editor-form-msg" id="formMsg"></div>
-    </form>
 
-    <div class="custom-list">
-      <h3>MODIFIER LES CRITIQUES</h3>
-      <p class="hint">Toutes les critiques du quiz — les tiennes et celles d'origine. Clique sur MODIF. pour changer le texte, les propositions ou la bonne réponse.</p>
-      <div id="customListBody"></div>
-    </div>
+      <div class="editor-column">
+        <div class="custom-list">
+          <h3>MUSIQUE PERSONNALISEE</h3>
+          <p class="hint">Colle un lien direct vers un fichier audio, ou un lien YouTube. Laisse vide pour revenir à la musique par défaut.</p>
+          <div class="field">
+            <label for="musicUrlField">Lien (audio direct ou YouTube)</label>
+            <input type="text" id="musicUrlField" placeholder="https://... ou https://www.youtube.com/watch?v=...">
+          </div>
+          <div class="field">
+            <label for="musicTitleField">Titre de la musique</label>
+            <input type="text" id="musicTitleField" placeholder="Ex : Nightcall">
+          </div>
+          <div class="field">
+            <label for="musicArtistField">Artiste (ou nom de la chaîne YouTube si pas d'artiste précis)</label>
+            <input type="text" id="musicArtistField" placeholder="Ex : Kavinsky">
+          </div>
+          <button type="button" class="primary-btn" id="saveMusicBtn">ENREGISTRER LA MUSIQUE</button>
+          <div class="editor-form-msg" id="musicFormMsg"></div>
+        </div>
+      </div>
 
-    <div class="custom-list">
-      <h3>GERER LES NIVEAUX</h3>
-      <p class="hint">Image (URL) et animation de clic pour chaque niveau.</p>
-      <div id="levelManageList"></div>
-    </div>
-
-    <div class="custom-list">
-      <h3>MUSIQUE PERSONNALISEE</h3>
-      <p class="hint">Colle un lien direct vers un fichier audio, ou un lien YouTube. Laisse vide pour revenir à la musique par défaut.</p>
-      <div class="field">
-        <label for="musicUrlField">Lien (audio direct ou YouTube)</label>
-        <input type="text" id="musicUrlField" placeholder="https://... ou https://www.youtube.com/watch?v=...">
-      </div>
-      <div class="field">
-        <label for="musicTitleField">Titre de la musique</label>
-        <input type="text" id="musicTitleField" placeholder="Ex : Nightcall">
-      </div>
-      <div class="field">
-        <label for="musicArtistField">Artiste (ou nom de la chaîne YouTube si pas d'artiste précis)</label>
-        <input type="text" id="musicArtistField" placeholder="Ex : Kavinsky">
-      </div>
-      <button type="button" class="primary-btn" id="saveMusicBtn">ENREGISTRER LA MUSIQUE</button>
-      <div class="editor-form-msg" id="musicFormMsg"></div>
     </div>
 
     <div class="import-export-row">
@@ -2317,7 +2382,8 @@
           review: d.review,
           answer: d.answer,
           aliases: d.aliases || [],
-          level: d.level || 'Facile'
+          level: d.level || 'Facile',
+          createdAt: d.createdAt || null
         });
       });
       allQuestions = loaded;
@@ -2331,7 +2397,8 @@
     if (!firebaseReady) return null;
     try {
       const ref = await db.collection('critiques').add({
-        review: q.review, answer: q.answer, aliases: q.aliases || [], level: q.level
+        review: q.review, answer: q.answer, aliases: q.aliases || [], level: q.level,
+        createdAt: q.createdAt || new Date().toISOString()
       });
       return ref.id;
     } catch (err){
@@ -2343,7 +2410,8 @@
     if (!firebaseReady || !id) return;
     try {
       await db.collection('critiques').doc(id).set({
-        review: q.review, answer: q.answer, aliases: q.aliases || [], level: q.level
+        review: q.review, answer: q.answer, aliases: q.aliases || [], level: q.level,
+        createdAt: q.createdAt || new Date().toISOString()
       });
     } catch (err){
       // échec silencieux : la modif reste au moins visible localement pour cette session
@@ -2487,6 +2555,7 @@
   });
 
   rulesToggleBtn.addEventListener('click', () => {
+    settingsDropdown.classList.add('hidden');
     closeRulesBtn.classList.remove('hidden');
     rulesScreen.classList.remove('hidden');
     rulesScreen.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2495,6 +2564,32 @@
   closeRulesBtn.addEventListener('click', () => {
     rulesScreen.classList.add('hidden');
   });
+
+  function levelSeenKey(levelName){
+    return 'cinetoile_lastSeen_' + normalize(levelName);
+  }
+  function getLevelLastSeen(levelName){
+    try {
+      const raw = localStorage.getItem(levelSeenKey(levelName));
+      return raw ? new Date(raw) : null;
+    } catch (err){
+      return null;
+    }
+  }
+  function markLevelSeen(levelName){
+    try {
+      localStorage.setItem(levelSeenKey(levelName), new Date().toISOString());
+    } catch (err){
+      // stockage indisponible (navigation privée stricte, etc.) : on ignore silencieusement
+    }
+  }
+  function countNewCritiques(levelName){
+    const lastSeen = getLevelLastSeen(levelName);
+    if (!lastSeen) return 0; // jamais joué : pas de repère, donc pas de badge "nouveau"
+    return allQuestions.filter(q =>
+      q.level === levelName && q.createdAt && new Date(q.createdAt) > lastSeen
+    ).length;
+  }
 
   function renderLevelList(){
     classicLevelList.innerHTML = '';
@@ -2518,6 +2613,15 @@
       }
 
       btn.appendChild(document.createTextNode(level.name));
+
+      const newCount = countNewCritiques(level.name);
+      if (newCount > 0){
+        const newBadge = document.createElement('span');
+        newBadge.className = 'new-badge';
+        newBadge.textContent = `🆕 +${newCount} NOUVELLE${newCount > 1 ? 'S' : ''}`;
+        btn.appendChild(newBadge);
+      }
+
       const countSpan = document.createElement('span');
       countSpan.className = 'level-count';
       countSpan.textContent = `${count} critique${count > 1 ? 's' : ''}`;
@@ -2573,6 +2677,7 @@
 
   function selectLevel(level){
     currentLevel = level;
+    markLevelSeen(level);
     const levelObj = findLevel(level);
     applyTheme(levelObj ? levelObj.theme : 'default');
     levelScreen.classList.add('hidden');
@@ -2924,6 +3029,7 @@
   leaderboardLevelSelect.addEventListener('change', renderAdminLeaderboard);
 
   viewLeaderboardBtn.addEventListener('click', async () => {
+    settingsDropdown.classList.add('hidden');
     leaderboardShowMine = false;
     populateLeaderboardLevelSelect(currentLevel);
     renderAdminLeaderboard();
@@ -2935,6 +3041,7 @@
   });
 
   myStatsBtn.addEventListener('click', async () => {
+    settingsDropdown.classList.add('hidden');
     leaderboardShowMine = true;
     populateLeaderboardLevelSelect(currentLevel);
     renderAdminLeaderboard();
@@ -3355,10 +3462,20 @@
       : `${score} / ${total} vers la salle`;
   }
 
+  function shuffleArray(arr){
+    const copy = arr.slice();
+    for (let i = copy.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
   function rebuildPool(){
-    QUESTIONS = currentLevel
+    const pool = currentLevel
       ? allQuestions.filter(q => q.level === currentLevel)
       : allQuestions;
+    QUESTIONS = shuffleArray(pool);
   }
 
   function initFilmstrip(){
@@ -3732,7 +3849,10 @@
   });
 
   editorToggle.addEventListener('click', () => {
+    settingsDropdown.classList.add('hidden');
+    const willShow = editorPanel.classList.contains('hidden');
     editorPanel.classList.toggle('hidden');
+    if (willShow) editorPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
   // Le bouton de gestion des critiques n'est visible qu'après avoir :
@@ -3827,7 +3947,9 @@
 
     if (editingIndex !== null){
       const existingId = allQuestions[editingIndex].id;
+      const existingCreatedAt = allQuestions[editingIndex].createdAt;
       newQuestion.id = existingId;
+      if (existingCreatedAt) newQuestion.createdAt = existingCreatedAt;
       allQuestions[editingIndex] = newQuestion;
       formMsg.textContent = 'Critique modifiée. Le quiz redémarre avec la liste à jour.';
       if (existingId){
@@ -3836,6 +3958,7 @@
         addCritiqueToCloud(newQuestion).then(id => { if (id) newQuestion.id = id; });
       }
     } else {
+      newQuestion.createdAt = new Date().toISOString();
       allQuestions.push(newQuestion);
       formMsg.textContent = 'Critique ajoutée. Le quiz redémarre avec la liste à jour.';
       addCritiqueToCloud(newQuestion).then(id => { if (id) newQuestion.id = id; });
@@ -3979,7 +4102,8 @@
           review: q.review,
           answer: q.answer,
           aliases: q.aliases || [],
-          level: q.level || 'Facile'
+          level: q.level || 'Facile',
+          createdAt: q.createdAt || new Date().toISOString()
         }));
 
         normalized.forEach(q => {
