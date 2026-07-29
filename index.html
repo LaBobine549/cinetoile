@@ -1343,56 +1343,6 @@
   }
 
   #importInput{ display:none; }
-
-  /* ---------- Optimisations pour petits écrans (téléphones) ---------- */
-  @media (max-width: 480px){
-    body{ padding: 20px 12px 48px; }
-
-    h1.title{ font-size: clamp(1.8rem, 11vw, 2.6rem); }
-
-    .settings-dropdown{
-      min-width: 200px;
-      max-width: calc(100vw - 40px);
-      left: 0;
-    }
-
-    .top-bar-row{ gap: 8px; }
-    .settings-gear-btn, .back-to-level-btn{
-      width: 40px;
-      height: 40px;
-      font-size: 1.1rem;
-    }
-
-    .mode-select-btn{ font-size: 1.25rem; padding: 14px 12px; }
-    .mode-text.typewriter{ width: 11.5ch; }
-
-    .level-btn{
-      flex-wrap: wrap;
-      row-gap: 4px;
-      font-size: 1.15rem;
-    }
-    .level-count{ flex-basis: 100%; }
-
-    .lives-label{ font-size: 0.5rem; }
-    .rush-gauge-row{ flex-wrap: wrap; row-gap: 6px; }
-    .pause-btn{ font-size: 0.75rem; }
-
-    .now-playing{
-      left: 8px;
-      bottom: 8px;
-      padding: 8px 10px;
-      max-width: min(70vw, 220px);
-    }
-    .now-playing-title{ font-size: 0.95rem; }
-    .now-playing-artist{ font-size: 0.8rem; }
-
-    blockquote.review, .pause-message{ font-size: 1.25rem; min-height: 76px; }
-
-    .answer-form{ flex-direction: column; }
-    .answer-input, .answer-submit-btn{ width: 100%; }
-
-    .leaderboard-item{ font-size: 1rem; }
-  }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
