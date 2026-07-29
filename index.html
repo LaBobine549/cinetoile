@@ -434,12 +434,12 @@
     border-radius: var(--radius);
     padding: 18px 16px;
     cursor: pointer;
-    box-shadow: 0 6px 0 var(--purple), 0 10px 16px rgba(0,0,0,.45);
+    box-shadow: 0 7px 0 var(--purple), 0 12px 20px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.15);
     transition: transform .1s ease, box-shadow .1s ease;
     clip-path: polygon(0 0, 100% 0, 100% 78%, 95% 100%, 0 100%);
   }
-  .mode-select-btn:hover{ transform: translateY(-2px); box-shadow: 0 8px 0 var(--purple), 0 13px 18px rgba(0,0,0,.5); }
-  .mode-select-btn:active{ transform: translateY(4px); box-shadow: 0 2px 0 var(--purple), 0 3px 8px rgba(0,0,0,.4); }
+  .mode-select-btn:hover{ transform: translateY(-2px); box-shadow: 0 9px 0 var(--purple), 0 15px 22px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.2); }
+  .mode-select-btn:active{ transform: translateY(4px); box-shadow: 0 2px 0 var(--purple), 0 3px 8px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.1); }
   .mode-select-btn:focus-visible{ outline: 2px solid var(--yellow); outline-offset: 2px; }
 
   .mode-icon{
@@ -1463,7 +1463,7 @@
         <button class="ghost-btn" id="musicToggle">🔇 MUSIQUE</button>
         <button class="ghost-btn playing" id="sfxToggle">🔊 SONS</button>
         <button class="ghost-btn" id="viewLeaderboardBtn">🏆 VOIR LE CLASSEMENT</button>
-        <button class="ghost-btn" id="myStatsBtn">🏆 MON CLASSEMENT</button>
+        <button class="ghost-btn" id="myStatsBtn">👤 PROFIL</button>
         <button class="ghost-btn" id="rulesToggleBtn">📜 REGLES</button>
       </div>
     </div>
@@ -1491,7 +1491,7 @@
         Vous avez 5 essais par film. Si vous vous trompez, pas de panique : le jeu vous indiquera ce que votre film
         et celui que vous cherchez ont en commun (ex : genre, acteurs, année, etc.).
       </p>
-      <button type="button" class="ghost-btn hidden" id="closeRulesBtn">FERMER</button>
+      <button type="button" class="ghost-btn" id="closeRulesBtn">FERMER</button>
     </div>
   </div>
 
@@ -1543,6 +1543,15 @@
     <div id="adminLeaderboardList"></div>
     <div class="editor-actions">
       <button type="button" class="ghost-btn" id="closeLeaderboardBtn">FERMER</button>
+    </div>
+  </section>
+
+  <section class="editor-panel hidden" id="profilePanel" aria-label="Profil du joueur">
+    <h2>👤 PROFIL</h2>
+    <p class="hint">Tes statistiques, niveau par niveau.</p>
+    <div id="profileStatsList"></div>
+    <div class="editor-actions">
+      <button type="button" class="ghost-btn" id="closeProfileBtn">FERMER</button>
     </div>
   </section>
 
@@ -2239,6 +2248,9 @@
   const adminLeaderboardList = document.getElementById('adminLeaderboardList');
   const leaderboardLevelSelect = document.getElementById('leaderboardLevelSelect');
   const closeLeaderboardBtn = document.getElementById('closeLeaderboardBtn');
+  const profilePanel = document.getElementById('profilePanel');
+  const profileStatsList = document.getElementById('profileStatsList');
+  const closeProfileBtn = document.getElementById('closeProfileBtn');
   const levelSelect = document.getElementById('levelSelect');
   const newLevelBtn = document.getElementById('newLevelBtn');
   const levelManageList = document.getElementById('levelManageList');
@@ -2617,7 +2629,6 @@
 
   rulesToggleBtn.addEventListener('click', () => {
     settingsDropdown.classList.add('hidden');
-    closeRulesBtn.classList.remove('hidden');
     rulesScreen.classList.remove('hidden');
     rulesScreen.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
@@ -3143,16 +3154,46 @@
     renderAdminLeaderboard();
   });
 
+  function renderPlayerProfile(){
+    const myKey = normalize(playerName || '');
+    const mine = leaderboard.filter(e => normalize(e.name) === myKey);
+    profileStatsList.innerHTML = '';
+
+    if (mine.length === 0){
+      profileStatsList.innerHTML = '<p class="empty-note">Tu n\'as pas encore de partie enregistrée sous ce pseudo — joue une partie pour apparaître ici !</p>';
+      return;
+    }
+
+    mine
+      .slice()
+      .sort((a, b) => a.level.localeCompare(b.level))
+      .forEach(entry => {
+        const isRush = getLevelMode(entry.level) === 'rush';
+        const row = document.createElement('div');
+        row.className = 'leaderboard-item';
+        const left = document.createElement('span');
+        left.textContent = entry.level;
+        const right = document.createElement('span');
+        right.textContent = (isRush && entry.bestTime != null)
+          ? `${formatTime(entry.bestTime)} — ${entry.gamesPlayed} partie${entry.gamesPlayed > 1 ? 's' : ''}`
+          : `${entry.bestScore} / ${entry.bestTotal} — ${entry.gamesPlayed} partie${entry.gamesPlayed > 1 ? 's' : ''}`;
+        row.appendChild(left);
+        row.appendChild(right);
+        profileStatsList.appendChild(row);
+      });
+  }
+
   myStatsBtn.addEventListener('click', async () => {
     settingsDropdown.classList.add('hidden');
-    leaderboardShowMine = true;
-    populateLeaderboardLevelSelect(currentLevel);
-    renderAdminLeaderboard();
-    leaderboardPanel.classList.remove('hidden');
-    leaderboardPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    renderPlayerProfile();
+    profilePanel.classList.remove('hidden');
+    profilePanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     await loadLeaderboardFromCloud();
-    populateLeaderboardLevelSelect(currentLevel);
-    renderAdminLeaderboard();
+    renderPlayerProfile();
+  });
+
+  closeProfileBtn.addEventListener('click', () => {
+    profilePanel.classList.add('hidden');
   });
 
   closeLeaderboardBtn.addEventListener('click', () => {
