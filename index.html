@@ -280,6 +280,23 @@
     transition: transform .15s ease, box-shadow .15s ease;
   }
   .settings-gear-btn:hover{ transform: rotate(25deg); box-shadow: 4px 4px 0 rgba(249,240,2,.5); }
+
+  .back-to-level-btn{
+    background: #140a28;
+    border: 2px solid var(--cyan);
+    border-radius: 50%;
+    width: 46px;
+    height: 46px;
+    font-size: 1.4rem;
+    line-height: 1;
+    color: var(--cyan);
+    cursor: pointer;
+    flex-shrink: 0;
+    box-shadow: 3px 3px 0 rgba(var(--cyan-rgb),.35);
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .back-to-level-btn:hover{ transform: translateX(-3px); box-shadow: 4px 4px 0 rgba(var(--cyan-rgb),.5); }
+  .back-to-level-btn:focus-visible{ outline: 2px solid var(--yellow); outline-offset: 2px; }
   .settings-gear-btn:focus-visible{ outline: 2px solid var(--cyan); outline-offset: 2px; }
 
   .settings-dropdown{
@@ -778,6 +795,29 @@
     box-shadow: 0 0 8px rgba(var(--cyan-rgb), .4);
   }
 
+  .pause-btn{
+    font-family: 'VT323', monospace;
+    font-size: 0.85rem;
+    padding: 6px 10px;
+    flex-shrink: 0;
+  }
+
+  .pause-message{
+    font-family: 'VT323', monospace;
+    font-size: 1.5rem;
+    color: var(--yellow);
+    text-shadow: 0 0 8px rgba(249,240,2,.5);
+    text-align: center;
+    margin: 0 0 22px;
+    padding: 0 12px;
+    border: 2px dashed var(--card-edge);
+    border-radius: var(--radius);
+    min-height: 88px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   .heart-icon{
     color: var(--pink);
     filter: drop-shadow(0 0 4px var(--pink));
@@ -867,6 +907,9 @@
     color: var(--text);
     border-left: 3px solid var(--cyan);
     padding-left: 16px;
+    min-height: 88px;
+    display: flex;
+    align-items: center;
   }
 
   blockquote.review::before{ content: "“"; color: var(--cyan); }
@@ -1216,12 +1259,12 @@
   </div>
 
   <div class="top-bar-row hidden" id="topBarRow">
+    <button class="back-to-level-btn hidden" id="backToLevelBtn" aria-label="Retour au choix de niveau">←</button>
     <div class="settings-menu-wrapper">
       <button class="settings-gear-btn" id="settingsGearBtn" aria-label="Ouvrir le menu réglages">⚙️</button>
       <div class="settings-dropdown hidden" id="settingsDropdown">
         <button class="ghost-btn" id="editorToggle">✎ GERER MES CRITIQUES</button>
         <button class="ghost-btn" id="musicToggle">🔇 MUSIQUE</button>
-        <button class="ghost-btn" id="changeLevelBtn">🎚 CHANGER DE NIVEAU</button>
         <button class="ghost-btn" id="viewLeaderboardBtn">🏆 VOIR LE CLASSEMENT</button>
         <button class="ghost-btn" id="myStatsBtn">🏆 MON CLASSEMENT</button>
         <button class="ghost-btn" id="rulesToggleBtn">📜 REGLES</button>
@@ -1292,11 +1335,13 @@
     </div>
   </div>
 
-  <div class="game-area hidden" id="gameArea">
-
   <section class="editor-panel hidden" id="leaderboardPanel" aria-label="Classement complet">
     <h2>CLASSEMENT</h2>
     <p class="hint">Statistiques de tous les joueurs, mises à jour à chaque partie.</p>
+    <div class="field">
+      <label for="leaderboardLevelSelect">Niveau</label>
+      <select id="leaderboardLevelSelect"></select>
+    </div>
     <p class="stats-line" id="myStatsSummary"></p>
     <div id="adminLeaderboardList"></div>
     <div class="editor-actions">
@@ -1359,6 +1404,8 @@
     </div>
   </section>
 
+  <div class="game-area hidden" id="gameArea">
+
   <div class="stage">
     <div class="ticket" id="quizCard">
       <div class="ticket-label">
@@ -1378,8 +1425,10 @@
         <div class="rush-gauge-track">
           <div class="rush-gauge-fill" id="rushGaugeFill"></div>
         </div>
+        <button type="button" class="ghost-btn pause-btn" id="pauseBtn">⏸ PAUSE</button>
       </div>
       <blockquote class="review" id="reviewText"></blockquote>
+      <p class="pause-message hidden" id="pauseMessage"></p>
       <form class="answer-form" id="answerForm">
         <input type="text" class="answer-input" id="answerInput" placeholder="Le titre du film..." autocomplete="off">
         <button type="submit" class="answer-submit-btn">VALIDER</button>
@@ -1706,11 +1755,80 @@
     rushGaugeFill.style.width = '100%';
   }
 
+  let rushPaused = false;
+  let rushRemainingFraction = 1;
+
+  function pauseRush(){
+    if (!rushActive || rushPaused) return;
+    const track = rushGaugeFill.parentElement;
+    const trackWidth = track.offsetWidth;
+    const currentWidth = rushGaugeFill.getBoundingClientRect().width;
+    rushRemainingFraction = trackWidth > 0 ? Math.max(0, Math.min(1, currentWidth / trackWidth)) : 0;
+    rushGaugeFill.style.transition = 'none';
+    rushGaugeFill.style.width = (rushRemainingFraction * 100) + '%';
+    if (rushTimeoutHandler){
+      rushGaugeFill.removeEventListener('transitionend', rushTimeoutHandler);
+      rushTimeoutHandler = null;
+    }
+    rushPaused = true;
+  }
+
+  function resumeRush(){
+    if (!rushActive || !rushPaused) return;
+    const remainingDuration = getRushDuration(current) * rushRemainingFraction;
+    void rushGaugeFill.offsetWidth; // force le reflow
+    rushGaugeFill.style.transition = `width ${remainingDuration}s linear`;
+    rushGaugeFill.style.width = '0%';
+    rushTimeoutHandler = () => {
+      if (questionAnswered) return;
+      onRushTimeout();
+    };
+    rushGaugeFill.addEventListener('transitionend', rushTimeoutHandler, { once: true });
+    rushPaused = false;
+  }
+
+  const PAUSE_MESSAGES = [
+    "T'es un.e marrant.e toi.",
+    "Oups... c'est caché.",
+    "Attends... c'était écrit quoi déjà ?",
+    "Le temps continue de tourner ailleurs, pas ici.",
+    "Chut, on fait semblant de réfléchir."
+  ];
+
+  const pauseBtn = document.getElementById('pauseBtn');
+  const pauseMessage = document.getElementById('pauseMessage');
+  let isPaused = false;
+
+  pauseBtn.addEventListener('click', () => {
+    if (questionAnswered) return;
+
+    if (!isPaused){
+      isPaused = true;
+      if (getLevelMode(currentLevel) === 'rush') pauseRush();
+      reviewText.classList.add('hidden');
+      pauseMessage.textContent = PAUSE_MESSAGES[Math.floor(Math.random() * PAUSE_MESSAGES.length)];
+      pauseMessage.classList.remove('hidden');
+      answerInput.disabled = true;
+      answerSubmitBtn.disabled = true;
+      pauseBtn.textContent = '▶ REPRENDRE';
+    } else {
+      isPaused = false;
+      if (getLevelMode(currentLevel) === 'rush') resumeRush();
+      reviewText.classList.remove('hidden');
+      pauseMessage.classList.add('hidden');
+      answerInput.disabled = false;
+      answerSubmitBtn.disabled = false;
+      pauseBtn.textContent = '⏸ PAUSE';
+      answerInput.focus();
+    }
+  });
+
   function onRushTimeout(){
     if (questionAnswered) return;
     questionAnswered = true;
     answerInput.disabled = true;
     answerSubmitBtn.disabled = true;
+    pauseBtn.disabled = true;
     feedbackEl.textContent = 'TEMPS ECOULE ! TU DECOUVRIRAS PEUT-ETRE LA REPONSE UNE PROCHAINE FOIS !';
     feedbackEl.className = 'feedback wrong';
     const frame = document.getElementById('frame-' + current);
@@ -1789,15 +1907,17 @@
   const gameArea = document.getElementById('gameArea');
   const pseudoForm = document.getElementById('pseudoForm');
   const pseudoInput = document.getElementById('pseudoInput');
-  const changeLevelBtn = document.getElementById('changeLevelBtn');
   const settingsGearBtn = document.getElementById('settingsGearBtn');
   const settingsDropdown = document.getElementById('settingsDropdown');
   const topBarRow = document.getElementById('topBarRow');
+  const backToLevelBtn = document.getElementById('backToLevelBtn');
 
   function updateTopBarVisibility(){
     const inGame = !gameArea.classList.contains('hidden');
-    topBarRow.classList.toggle('hidden', !(isAdminUnlocked || inGame));
+    const onLevelScreen = !levelScreen.classList.contains('hidden');
+    topBarRow.classList.toggle('hidden', !(isAdminUnlocked || inGame || onLevelScreen));
     filmstrip.classList.toggle('hidden', !inGame);
+    backToLevelBtn.classList.toggle('hidden', !inGame);
   }
   const rulesScreen = document.getElementById('rulesScreen');
   const fireOverlay = document.getElementById('fireOverlay');
@@ -1808,6 +1928,7 @@
   const myStatsSummary = document.getElementById('myStatsSummary');
   const leaderboardPanel = document.getElementById('leaderboardPanel');
   const adminLeaderboardList = document.getElementById('adminLeaderboardList');
+  const leaderboardLevelSelect = document.getElementById('leaderboardLevelSelect');
   const closeLeaderboardBtn = document.getElementById('closeLeaderboardBtn');
   const levelSelect = document.getElementById('levelSelect');
   const newLevelBtn = document.getElementById('newLevelBtn');
@@ -2037,7 +2158,7 @@
     }
   }
 
-  async function loadLeaderboardFromCloud(highlight){
+  async function loadLeaderboardFromCloud(highlight, filterLevel){
     if (!firebaseReady) return;
     try {
       const snapshot = await db.collection('scores').get();
@@ -2047,6 +2168,7 @@
         leaderboard.push({
           key: doc.id,
           name: d.name,
+          level: d.level || 'Facile',
           bestScore: d.bestScore,
           bestTotal: d.bestTotal || 1,
           gamesPlayed: d.gamesPlayed || 1,
@@ -2054,18 +2176,22 @@
           lastTotal: d.lastTotal
         });
       });
-      renderLeaderboard(highlight);
+      renderLeaderboard(highlight, filterLevel);
     } catch (err){
       // Pas de connexion ou config pas encore prête : on garde le classement local tel quel.
     }
   }
 
-  // Une seule fiche par pseudo (identifiée par son nom normalisé) : chaque partie
-  // met à jour ses stats au lieu de créer une nouvelle ligne dans le classement.
-  async function upsertPlayerStatsCloud(name, score, total){
+  function scoreKey(name, level){
+    return normalize(name) + '__' + normalize(level);
+  }
+
+  // Une fiche par pseudo ET par niveau : chaque partie met à jour les stats
+  // de CE niveau précisément, pour avoir un classement séparé par niveau/mode.
+  async function upsertPlayerStatsCloud(name, score, total, level){
     if (!firebaseReady) return null;
-    const key = normalize(name);
-    if (!key) return null;
+    const key = scoreKey(name, level);
+    if (!normalize(name)) return null;
     try {
       const ref = db.collection('scores').doc(key);
       const doc = await ref.get();
@@ -2076,6 +2202,7 @@
         const isNewBest = (score / total) > ((d.bestScore || 0) / (d.bestTotal || 1));
         const updated = {
           name: name,
+          level: level,
           bestScore: isNewBest ? score : d.bestScore,
           bestTotal: isNewBest ? total : d.bestTotal,
           gamesPlayed: gamesPlayed,
@@ -2088,6 +2215,7 @@
       } else {
         const created = {
           name: name,
+          level: level,
           bestScore: score,
           bestTotal: total,
           gamesPlayed: 1,
@@ -2104,11 +2232,11 @@
   }
 
   // Repli local (si Firebase n'est pas configuré) : même logique, en mémoire.
-  function upsertPlayerStatsLocal(name, score, total){
-    const key = normalize(name);
+  function upsertPlayerStatsLocal(name, score, total, level){
+    const key = scoreKey(name, level);
     let entry = leaderboard.find(e => e.key === key);
     if (!entry){
-      entry = { key, name, bestScore: score, bestTotal: total, gamesPlayed: 1, lastScore: score, lastTotal: total };
+      entry = { key, name, level, bestScore: score, bestTotal: total, gamesPlayed: 1, lastScore: score, lastTotal: total };
       leaderboard.push(entry);
     } else {
       entry.gamesPlayed++;
@@ -2132,16 +2260,19 @@
     renderLevelList();
     showModeSelect();
     levelScreen.classList.remove('hidden');
+    updateTopBarVisibility();
   });
 
-  changeLevelBtn.addEventListener('click', () => {
+  function goBackToLevelSelect(){
     gameArea.classList.add('hidden');
     resetTheme();
     renderLevelList();
     showModeSelect();
     levelScreen.classList.remove('hidden');
     updateTopBarVisibility();
-  });
+  }
+
+  backToLevelBtn.addEventListener('click', goBackToLevelSelect);
 
   settingsGearBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -2492,14 +2623,15 @@
     });
   }
 
-  function renderLeaderboard(highlight){
-    const sorted = leaderboard.slice().sort((a, b) =>
+  function renderLeaderboard(highlight, filterLevel){
+    const pool = filterLevel ? leaderboard.filter(e => e.level === filterLevel) : leaderboard.slice();
+    const sorted = pool.sort((a, b) =>
       (b.bestScore / b.bestTotal) - (a.bestScore / a.bestTotal) || b.bestScore - a.bestScore
     );
     leaderboardList.innerHTML = '';
 
     if (sorted.length === 0){
-      leaderboardList.innerHTML = '<p class="empty-note">Personne n\'a encore joué.</p>';
+      leaderboardList.innerHTML = '<p class="empty-note">Personne n\'a encore joué à ce niveau.</p>';
       return;
     }
 
@@ -2520,7 +2652,7 @@
 
     if (highlight){
       const rank = sorted.findIndex(isMine) + 1;
-      if (rank > 0) rankLine.textContent = `TU ES CLASSE #${rank} SUR ${sorted.length} !`;
+      if (rank > 0) rankLine.textContent = `TU ES CLASSE #${rank} SUR ${sorted.length} (${filterLevel}) !`;
       statsLine.textContent =
         `Meilleur score : ${highlight.bestScore} / ${highlight.bestTotal} — ` +
         `Dernier essai : ${highlight.lastScore} / ${highlight.lastTotal} — ` +
@@ -2528,13 +2660,34 @@
     }
   }
 
-  function renderAdminLeaderboard(highlightKey){
-    const sorted = leaderboard.slice().sort((a, b) =>
+  let leaderboardShowMine = false;
+
+  function populateLeaderboardLevelSelect(preferredLevel){
+    const current = leaderboardLevelSelect.value;
+    leaderboardLevelSelect.innerHTML = '';
+    availableLevels.forEach(level => {
+      const opt = document.createElement('option');
+      opt.value = level.name;
+      opt.textContent = level.name;
+      leaderboardLevelSelect.appendChild(opt);
+    });
+    const target = preferredLevel && availableLevels.some(l => l.name === preferredLevel)
+      ? preferredLevel
+      : (availableLevels.some(l => l.name === current) ? current : (availableLevels[0] ? availableLevels[0].name : ''));
+    leaderboardLevelSelect.value = target;
+  }
+
+  function renderAdminLeaderboard(){
+    const filterLevel = leaderboardLevelSelect.value;
+    const highlightKey = leaderboardShowMine ? scoreKey(playerName || '', filterLevel) : null;
+
+    const pool = leaderboard.filter(e => e.level === filterLevel);
+    const sorted = pool.sort((a, b) =>
       (b.bestScore / b.bestTotal) - (a.bestScore / a.bestTotal) || b.bestScore - a.bestScore
     );
     adminLeaderboardList.innerHTML = '';
 
-    if (highlightKey){
+    if (leaderboardShowMine){
       const mine = sorted.find(e => e.key === highlightKey);
       if (mine){
         const rank = sorted.indexOf(mine) + 1;
@@ -2542,21 +2695,21 @@
           `TOI (${mine.name}) : #${rank} sur ${sorted.length} — Meilleur score : ${mine.bestScore} / ${mine.bestTotal} — ` +
           `${mine.gamesPlayed} partie${mine.gamesPlayed > 1 ? 's' : ''} jouée${mine.gamesPlayed > 1 ? 's' : ''}`;
       } else {
-        myStatsSummary.textContent = "Tu n'as pas encore de partie enregistrée sous ce pseudo — joue une partie pour apparaître ici !";
+        myStatsSummary.textContent = "Tu n'as pas encore de partie enregistrée sous ce pseudo, pour ce niveau — joue une partie pour apparaître ici !";
       }
     } else {
       myStatsSummary.textContent = '';
     }
 
     if (sorted.length === 0){
-      adminLeaderboardList.innerHTML = '<p class="empty-note">Personne n\'a encore joué.</p>';
+      adminLeaderboardList.innerHTML = '<p class="empty-note">Personne n\'a encore joué à ce niveau.</p>';
       return;
     }
 
     sorted.forEach((entry, idx) => {
       const row = document.createElement('div');
       row.className = 'leaderboard-item';
-      if (highlightKey && entry.key === highlightKey) row.classList.add('my-entry');
+      if (leaderboardShowMine && entry.key === highlightKey) row.classList.add('my-entry');
       const left = document.createElement('span');
       left.textContent = `#${idx + 1} ${entry.name}`;
       const right = document.createElement('span');
@@ -2567,21 +2720,28 @@
     });
   }
 
+  leaderboardLevelSelect.addEventListener('change', renderAdminLeaderboard);
+
   viewLeaderboardBtn.addEventListener('click', async () => {
+    leaderboardShowMine = false;
+    populateLeaderboardLevelSelect(currentLevel);
     renderAdminLeaderboard();
     leaderboardPanel.classList.remove('hidden');
     leaderboardPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     await loadLeaderboardFromCloud();
+    populateLeaderboardLevelSelect(currentLevel);
     renderAdminLeaderboard();
   });
 
   myStatsBtn.addEventListener('click', async () => {
-    const myKey = normalize(playerName || '');
-    renderAdminLeaderboard(myKey);
+    leaderboardShowMine = true;
+    populateLeaderboardLevelSelect(currentLevel);
+    renderAdminLeaderboard();
     leaderboardPanel.classList.remove('hidden');
     leaderboardPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     await loadLeaderboardFromCloud();
-    renderAdminLeaderboard(myKey);
+    populateLeaderboardLevelSelect(currentLevel);
+    renderAdminLeaderboard();
   });
 
   closeLeaderboardBtn.addEventListener('click', () => {
@@ -2616,16 +2776,20 @@
           typeof e.bestScore === 'number' && typeof e.bestTotal === 'number'
         );
         if (!valid) throw new Error('format');
-        data.forEach(e => leaderboard.push({
-          key: e.key || normalize(e.name),
-          name: e.name,
-          bestScore: e.bestScore,
-          bestTotal: e.bestTotal,
-          gamesPlayed: e.gamesPlayed || 1,
-          lastScore: e.lastScore != null ? e.lastScore : e.bestScore,
-          lastTotal: e.lastTotal != null ? e.lastTotal : e.bestTotal
-        }));
-        renderLeaderboard();
+        data.forEach(e => {
+          const level = e.level || 'Facile';
+          leaderboard.push({
+            key: e.key || scoreKey(e.name, level),
+            name: e.name,
+            level: level,
+            bestScore: e.bestScore,
+            bestTotal: e.bestTotal,
+            gamesPlayed: e.gamesPlayed || 1,
+            lastScore: e.lastScore != null ? e.lastScore : e.bestScore,
+            lastTotal: e.lastTotal != null ? e.lastTotal : e.bestTotal
+          });
+        });
+        renderAdminLeaderboard();
       } catch (err){
         // fichier invalide : on ignore silencieusement pour ne pas casser l'écran de résultat
       }
@@ -2914,6 +3078,9 @@
       stopRushGauge();
       rushGaugeRow.classList.add('hidden');
       livesRow.classList.remove('hidden');
+      isPaused = false;
+      pauseMessage.classList.add('hidden');
+      reviewText.classList.remove('hidden');
       nextBtn.style.display = 'none';
       return;
     }
@@ -2923,6 +3090,11 @@
     const q = QUESTIONS[current];
     qCounter.textContent = `QUESTION ${current + 1} / ${QUESTIONS.length}`;
     reviewText.textContent = q.review;
+    reviewText.classList.remove('hidden');
+    pauseMessage.classList.add('hidden');
+    isPaused = false;
+    pauseBtn.textContent = '⏸ PAUSE';
+    pauseBtn.disabled = false;
     feedbackEl.textContent = '';
     feedbackEl.className = 'feedback';
     commonPointsEl.innerHTML = '';
@@ -2935,7 +3107,10 @@
     cachedAnswerInfo = null;
     stopRushGauge();
 
-    if (getLevelMode(currentLevel) === 'rush'){
+    const isRushLevel = getLevelMode(currentLevel) === 'rush';
+    pauseBtn.classList.toggle('hidden', !isRushLevel);
+
+    if (isRushLevel){
       livesRow.classList.add('hidden');
       rushGaugeRow.classList.remove('hidden');
       startRushGauge();
@@ -3033,6 +3208,7 @@
       stopRushGauge();
       answerInput.disabled = true;
       answerSubmitBtn.disabled = true;
+      pauseBtn.disabled = true;
       answerInput.className = 'answer-input correct';
       feedbackEl.textContent = 'BONNE PIOCHE ! LE CRITIQUE N\'A CONVAINCU PERSONNE.';
       feedbackEl.className = 'feedback correct';
@@ -3112,14 +3288,14 @@
     if (isAdminUnlocked){
       rankLine.textContent = "MODE ADMIN — CETTE PARTIE N'EST PAS COMPTABILISEE DANS LE CLASSEMENT.";
       statsLine.textContent = '';
-      renderLeaderboard();
+      renderLeaderboard(null, currentLevel);
     } else {
       const name = playerName || 'ANONYME';
-      const localEntry = upsertPlayerStatsLocal(name, score, QUESTIONS.length);
-      renderLeaderboard(localEntry);
+      const localEntry = upsertPlayerStatsLocal(name, score, QUESTIONS.length, currentLevel);
+      renderLeaderboard(localEntry, currentLevel);
 
-      upsertPlayerStatsCloud(name, score, QUESTIONS.length).then(cloudEntry => {
-        if (cloudEntry) loadLeaderboardFromCloud(cloudEntry);
+      upsertPlayerStatsCloud(name, score, QUESTIONS.length, currentLevel).then(cloudEntry => {
+        if (cloudEntry) loadLeaderboardFromCloud(cloudEntry, currentLevel);
       });
     }
 
