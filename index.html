@@ -802,6 +802,44 @@
     flex-shrink: 0;
   }
 
+  .now-playing{
+    position: fixed;
+    left: 14px;
+    bottom: 14px;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #140a28;
+    border: 2px solid var(--cyan);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    box-shadow: 3px 3px 0 rgba(var(--cyan-rgb),.35), 0 8px 20px rgba(0,0,0,.5);
+    max-width: min(80vw, 300px);
+  }
+  .now-playing-icon{ font-size: 1.3rem; flex-shrink: 0; }
+  .now-playing-text{
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .now-playing-title{
+    font-family: 'VT323', monospace;
+    font-size: 1.1rem;
+    color: var(--cyan);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .now-playing-artist{
+    font-family: 'VT323', monospace;
+    font-size: 0.9rem;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   .pause-message{
     font-family: 'VT323', monospace;
     font-size: 1.5rem;
@@ -908,8 +946,6 @@
     border-left: 3px solid var(--cyan);
     padding-left: 16px;
     min-height: 88px;
-    display: flex;
-    align-items: center;
   }
 
   blockquote.review::before{ content: "“"; color: var(--cyan); }
@@ -1251,6 +1287,16 @@
 
   <div class="fire-overlay" id="fireOverlay" aria-hidden="true"></div>
 
+  <div id="ytPlayerContainer" style="position:fixed; width:1px; height:1px; overflow:hidden; opacity:0; pointer-events:none;"></div>
+
+  <div class="now-playing hidden" id="nowPlaying">
+    <span class="now-playing-icon">🎵</span>
+    <div class="now-playing-text">
+      <span class="now-playing-title" id="nowPlayingTitle"></span>
+      <span class="now-playing-artist" id="nowPlayingArtist"></span>
+    </div>
+  </div>
+
   <div class="marquee">
     <div class="marquee-frame">
       <h1 class="title">CINETOILE</h1>
@@ -1394,6 +1440,25 @@
       <h3>GERER LES NIVEAUX</h3>
       <p class="hint">Image (URL) et animation de clic pour chaque niveau.</p>
       <div id="levelManageList"></div>
+    </div>
+
+    <div class="custom-list">
+      <h3>MUSIQUE PERSONNALISEE</h3>
+      <p class="hint">Colle un lien direct vers un fichier audio, ou un lien YouTube. Laisse vide pour revenir à la musique par défaut.</p>
+      <div class="field">
+        <label for="musicUrlField">Lien (audio direct ou YouTube)</label>
+        <input type="text" id="musicUrlField" placeholder="https://... ou https://www.youtube.com/watch?v=...">
+      </div>
+      <div class="field">
+        <label for="musicTitleField">Titre de la musique</label>
+        <input type="text" id="musicTitleField" placeholder="Ex : Nightcall">
+      </div>
+      <div class="field">
+        <label for="musicArtistField">Artiste (ou nom de la chaîne YouTube si pas d'artiste précis)</label>
+        <input type="text" id="musicArtistField" placeholder="Ex : Kavinsky">
+      </div>
+      <button type="button" class="primary-btn" id="saveMusicBtn">ENREGISTRER LA MUSIQUE</button>
+      <div class="editor-form-msg" id="musicFormMsg"></div>
     </div>
 
     <div class="import-export-row">
@@ -1805,6 +1870,7 @@
     if (!isPaused){
       isPaused = true;
       if (getLevelMode(currentLevel) === 'rush') pauseRush();
+      pauseMessage.style.minHeight = reviewText.offsetHeight + 'px';
       reviewText.classList.add('hidden');
       pauseMessage.textContent = PAUSE_MESSAGES[Math.floor(Math.random() * PAUSE_MESSAGES.length)];
       pauseMessage.classList.remove('hidden');
@@ -1816,6 +1882,7 @@
       if (getLevelMode(currentLevel) === 'rush') resumeRush();
       reviewText.classList.remove('hidden');
       pauseMessage.classList.add('hidden');
+      pauseMessage.style.minHeight = '';
       answerInput.disabled = false;
       answerSubmitBtn.disabled = false;
       pauseBtn.textContent = '⏸ PAUSE';
@@ -1889,17 +1956,23 @@
 
   chooseClassicBtn.addEventListener('click', () => {
     playSelectSound();
-    modeSelectView.classList.add('hidden');
-    classicModePanel.classList.remove('hidden');
-    levelScreenHint.textContent = 'Choisis ton niveau de difficulté.';
+    playLevelAnimation(chooseClassicBtn, 'pulse');
+    setTimeout(() => {
+      modeSelectView.classList.add('hidden');
+      classicModePanel.classList.remove('hidden');
+      levelScreenHint.textContent = 'Choisis ton niveau de difficulté.';
+    }, 220);
   });
 
   chooseRushBtn.addEventListener('click', () => {
     playSelectSound();
-    modeSelectView.classList.add('hidden');
-    rushModePanel.classList.remove('hidden');
-    levelScreenHint.textContent = 'Choisis ton niveau Rush.';
-    applyTheme('inferno');
+    playLevelAnimation(chooseRushBtn, 'glitch');
+    setTimeout(() => {
+      modeSelectView.classList.add('hidden');
+      rushModePanel.classList.remove('hidden');
+      levelScreenHint.textContent = 'Choisis ton niveau Rush.';
+      applyTheme('inferno');
+    }, 220);
   });
 
   backFromClassicBtn.addEventListener('click', showModeSelect);
@@ -2910,13 +2983,174 @@
     }
   }
 
-  musicToggle.addEventListener('click', () => {
+  // ---------- Musique personnalisée (configurée par l'admin, via URL) ----------
+  let customMusic = { url: '', title: '', artist: '' };
+  let musicSourceType = 'chiptune'; // 'chiptune' | 'youtube' | 'audio'
+  let ytPlayer = null;
+  let ytApiLoading = false;
+  let customAudioEl = null;
+
+  const musicUrlField = document.getElementById('musicUrlField');
+  const musicTitleField = document.getElementById('musicTitleField');
+  const musicArtistField = document.getElementById('musicArtistField');
+  const saveMusicBtn = document.getElementById('saveMusicBtn');
+  const musicFormMsg = document.getElementById('musicFormMsg');
+  const nowPlaying = document.getElementById('nowPlaying');
+  const nowPlayingTitle = document.getElementById('nowPlayingTitle');
+  const nowPlayingArtist = document.getElementById('nowPlayingArtist');
+
+  function extractYouTubeId(url){
+    const patterns = [
+      /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+      /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
+      /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+      /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/
+    ];
+    for (const re of patterns){
+      const m = url.match(re);
+      if (m) return m[1];
+    }
+    return null;
+  }
+
+  function loadYouTubeAPI(){
+    return new Promise(resolve => {
+      if (window.YT && window.YT.Player){ resolve(); return; }
+      if (ytApiLoading){
+        const check = setInterval(() => {
+          if (window.YT && window.YT.Player){ clearInterval(check); resolve(); }
+        }, 100);
+        return;
+      }
+      ytApiLoading = true;
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(tag);
+      window.onYouTubeIframeAPIReady = () => resolve();
+    });
+  }
+
+  async function ensureYouTubePlayer(videoId){
+    await loadYouTubeAPI();
+    if (ytPlayer && ytPlayer.loadVideoById){
+      ytPlayer.loadVideoById(videoId);
+      return ytPlayer;
+    }
+    return new Promise(resolve => {
+      ytPlayer = new YT.Player('ytPlayerContainer', {
+        height: '1',
+        width: '1',
+        videoId: videoId,
+        playerVars: { autoplay: 0, controls: 0 },
+        events: { onReady: () => resolve(ytPlayer) }
+      });
+    });
+  }
+
+  async function loadMusicConfigFromCloud(){
+    if (!firebaseReady) return;
+    try {
+      const doc = await db.collection('config').doc('music').get();
+      if (doc.exists){
+        const d = doc.data();
+        customMusic = { url: d.url || '', title: d.title || '', artist: d.artist || '' };
+      }
+    } catch (err){
+      // pas de config trouvée : on garde la musique chiptune par défaut
+    }
+  }
+
+  async function saveMusicConfigToCloud(){
+    if (!firebaseReady) return;
+    try {
+      await db.collection('config').doc('music').set(customMusic);
+    } catch (err){
+      // échec silencieux : la config reste au moins active pour cette session
+    }
+  }
+
+  function updateNowPlayingWidget(show){
+    if (show && customMusic.url){
+      nowPlayingTitle.textContent = customMusic.title || 'Musique personnalisée';
+      nowPlayingArtist.textContent = customMusic.artist || '';
+      nowPlaying.classList.remove('hidden');
+    } else {
+      nowPlaying.classList.add('hidden');
+    }
+  }
+
+  async function startCustomMusic(){
+    const ytId = extractYouTubeId(customMusic.url);
+    try {
+      if (ytId){
+        musicSourceType = 'youtube';
+        const player = await ensureYouTubePlayer(ytId);
+        if (player.setVolume) player.setVolume(40);
+        if (player.playVideo) player.playVideo();
+      } else {
+        musicSourceType = 'audio';
+        if (!customAudioEl){
+          customAudioEl = new Audio(customMusic.url);
+          customAudioEl.loop = true;
+          customAudioEl.volume = 0.4;
+        } else if (customAudioEl.src !== customMusic.url){
+          customAudioEl.src = customMusic.url;
+        }
+        await customAudioEl.play().catch(() => {});
+      }
+      updateNowPlayingWidget(true);
+    } catch (err){
+      // lecture impossible (lien invalide, etc.) : on n'affiche pas le mini-cadre
+    }
+  }
+
+  function stopCustomMusic(){
+    if (musicSourceType === 'youtube' && ytPlayer && ytPlayer.pauseVideo){
+      ytPlayer.pauseVideo();
+    }
+    if (customAudioEl){
+      customAudioEl.pause();
+    }
+    updateNowPlayingWidget(false);
+  }
+
+  saveMusicBtn.addEventListener('click', async () => {
+    customMusic = {
+      url: musicUrlField.value.trim(),
+      title: musicTitleField.value.trim(),
+      artist: musicArtistField.value.trim()
+    };
+    await saveMusicConfigToCloud();
+
     if (musicEnabled){
       stopMusic();
+      stopCustomMusic();
+      musicEnabled = false;
+      musicToggle.textContent = '🔇 MUSIQUE';
+      musicToggle.classList.remove('playing');
+    }
+
+    musicFormMsg.textContent = 'Musique enregistrée !';
+    musicFormMsg.className = 'editor-form-msg ok';
+    setTimeout(() => {
+      musicFormMsg.textContent = '';
+      musicFormMsg.className = 'editor-form-msg';
+    }, 2000);
+  });
+
+  musicToggle.addEventListener('click', async () => {
+    if (musicEnabled){
+      if (customMusic.url) stopCustomMusic(); else stopMusic();
+      musicEnabled = false;
       musicToggle.textContent = '🔇 MUSIQUE';
       musicToggle.classList.remove('playing');
     } else {
-      startMusic();
+      if (customMusic.url){
+        await startCustomMusic();
+        musicEnabled = true;
+      } else {
+        startMusic();
+      }
       musicToggle.textContent = '🔊 MUSIQUE';
       musicToggle.classList.add('playing');
     }
@@ -3668,6 +3902,10 @@
     });
 
     await initTMDb();
+    await loadMusicConfigFromCloud();
+    musicUrlField.value = customMusic.url;
+    musicTitleField.value = customMusic.title;
+    musicArtistField.value = customMusic.artist;
 
     rebuildPool();
     initFilmstrip();
