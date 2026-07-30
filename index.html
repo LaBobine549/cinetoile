@@ -919,6 +919,19 @@
     flex-shrink: 0;
   }
 
+  .skip-row{
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 10px 0 0;
+  }
+  .skip-btn{
+    font-size: 0.55rem;
+    flex: 1 1 0;
+    max-width: 180px;
+    text-align: center;
+  }
+
   .now-playing{
     position: fixed;
     left: 14px;
@@ -1514,6 +1527,17 @@
     </div>
   </div>
 
+  <div class="start-screen hidden" id="resumeScreen">
+    <div class="ticket start-ticket">
+      <div class="ticket-label"><span class="slash-heading"><span>PARTIE EN COURS</span></span></div>
+      <p class="hint" id="resumeSummaryText"></p>
+      <div class="mode-select-view">
+        <button type="button" class="mode-select-btn" id="resumeContinueBtn">▶ REPRENDRE</button>
+        <button type="button" class="mode-select-btn" id="resumeNewBtn">✚ NOUVELLE PARTIE</button>
+      </div>
+    </div>
+  </div>
+
   <div class="start-screen hidden" id="levelScreen">
     <div class="ticket start-ticket">
       <div class="ticket-label"><span class="slash-heading"><span>CHOISIS TON NIVEAU</span></span></div>
@@ -1674,6 +1698,10 @@
         <input type="text" class="answer-input" id="answerInput" placeholder="Le titre du film..." autocomplete="off">
         <button type="submit" class="answer-submit-btn">VALIDER</button>
       </form>
+      <div class="skip-row" id="skipRow">
+        <button type="button" class="ghost-btn skip-btn" id="backSkipBtn">◀ PRECEDENT</button>
+        <button type="button" class="ghost-btn skip-btn" id="skipBtn">PASSER ▶</button>
+      </div>
       <div class="feedback" id="feedback"></div>
       <div class="common-points" id="commonPoints"></div>
       <div class="poster-box hidden" id="posterBox">
@@ -1946,6 +1974,7 @@
   let editingIndex = null;
 
   let current = 0;
+  let playOrder = [];
   let score = 0;
   let attemptsLeft = 5;
   let currentGuesses = [];
@@ -2129,10 +2158,11 @@
     pauseBtn.disabled = true;
     feedbackEl.textContent = 'TEMPS ECOULE ! TU DECOUVRIRAS PEUT-ETRE LA REPONSE UNE PROCHAINE FOIS !';
     feedbackEl.className = 'feedback wrong';
-    const frame = document.getElementById('frame-' + current);
+    const frame = document.getElementById('frame-' + playOrder[current]);
     if (frame) frame.classList.add('answered-wrong');
     finishQuestion(false);
     nextBtn.style.display = 'inline-block';
+    skipRow.classList.add('hidden');
     playWrongSound();
   }
 
@@ -2157,6 +2187,9 @@
   const posterBox = document.getElementById('posterBox');
   const posterImg = document.getElementById('posterImg');
   const nextBtn = document.getElementById('nextBtn');
+  const skipBtn = document.getElementById('skipBtn');
+  const backSkipBtn = document.getElementById('backSkipBtn');
+  const skipRow = document.getElementById('skipRow');
   const quizCard = document.getElementById('quizCard');
   const resultCard = document.getElementById('resultCard');
   const replayBtn = document.getElementById('replayBtn');
@@ -2597,12 +2630,98 @@
     return entry;
   }
 
+  const resumeScreen = document.getElementById('resumeScreen');
+  const resumeSummaryText = document.getElementById('resumeSummaryText');
+  const resumeContinueBtn = document.getElementById('resumeContinueBtn');
+  const resumeNewBtn = document.getElementById('resumeNewBtn');
+  let pendingSession = null;
+
   pseudoForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const name = pseudoInput.value.trim();
     if (!name) return;
     playerName = name;
     startScreen.classList.add('hidden');
+
+    const session = loadGameSession(name);
+    const hasProgress = session && session.historyByKey && Object.keys(session.historyByKey).length > 0;
+    if (hasProgress && findLevel(session.level)){
+      pendingSession = session;
+      const answeredCount = Object.keys(session.historyByKey).length;
+      resumeSummaryText.textContent =
+        `Tu avais une partie en cours sur "${session.level}" — ${session.score} bonne${session.score > 1 ? 's' : ''} réponse${session.score > 1 ? 's' : ''}, ` +
+        `${answeredCount} question${answeredCount > 1 ? 's' : ''} déjà jouée${answeredCount > 1 ? 's' : ''}. Tu veux reprendre où tu en étais ?`;
+      resumeScreen.classList.remove('hidden');
+      updateTopBarVisibility();
+      return;
+    }
+
+    renderLevelList();
+    showModeSelect();
+    levelScreen.classList.remove('hidden');
+    updateTopBarVisibility();
+  });
+
+  resumeContinueBtn.addEventListener('click', () => {
+    const session = pendingSession;
+    pendingSession = null;
+    resumeScreen.classList.add('hidden');
+    if (!session) return;
+
+    currentLevel = session.level;
+    const levelObj = findLevel(currentLevel);
+    applyTheme(levelObj ? levelObj.theme : 'default');
+
+    const levelQuestions = allQuestions.filter(q => q.level === currentLevel);
+    const byKey = {};
+    levelQuestions.forEach(q => { byKey[questionKey(q)] = q; });
+
+    // Reconstruit l'ordre sauvegardé en ignorant les critiques supprimées entre-temps,
+    // puis ajoute à la fin celles éventuellement ajoutées depuis la sauvegarde.
+    const restoredOrder = session.orderedKeys.filter(k => byKey[k]).map(k => byKey[k]);
+    const restoredKeysSet = new Set(session.orderedKeys);
+    const newlyAdded = levelQuestions.filter(q => !restoredKeysSet.has(questionKey(q)));
+    QUESTIONS = restoredOrder.concat(newlyAdded);
+    playOrder = QUESTIONS.map((_, i) => i);
+    skipStack = (session.skippedKeys || [])
+      .filter(k => byKey[k])
+      .map(k => QUESTIONS.indexOf(byKey[k]))
+      .filter(i => i !== -1);
+
+    history.length = 0;
+    QUESTIONS.forEach((q, i) => {
+      const h = session.historyByKey[questionKey(q)];
+      if (h) history[i] = h;
+    });
+
+    score = session.score || 0;
+    current = Math.min(session.current || 0, Math.max(0, QUESTIONS.length - 1));
+    rushTotalTime = session.rushTotalTime || 0;
+
+    levelScreen.classList.add('hidden');
+    rulesScreen.classList.add('hidden');
+    gameArea.classList.remove('hidden');
+    updateTopBarVisibility();
+
+    resultCard.classList.add('hidden');
+    quizCard.classList.remove('hidden');
+    initFilmstrip();
+    QUESTIONS.forEach((q, i) => {
+      if (history[i]){
+        const f = document.getElementById('frame-' + i);
+        if (f) f.classList.add(history[i].solved ? 'answered-correct' : 'answered-wrong');
+      }
+    });
+    renderQuestion();
+    updateWalker();
+    markLevelSeen(currentLevel);
+    answerInput.focus();
+  });
+
+  resumeNewBtn.addEventListener('click', () => {
+    clearGameSession(playerName);
+    pendingSession = null;
+    resumeScreen.classList.add('hidden');
     renderLevelList();
     showModeSelect();
     levelScreen.classList.remove('hidden');
@@ -2665,6 +2784,53 @@
     return allQuestions.filter(q =>
       q.level === levelName && q.createdAt && new Date(q.createdAt) > lastSeen
     ).length;
+  }
+
+  // ---------- Sauvegarde/reprise de partie en cours (par pseudo, dans ce navigateur) ----------
+  function sessionKey(name){
+    return 'cinetoile_session_' + normalize(name);
+  }
+  function questionKey(q){
+    // Repère stable pour une critique : son id Firestore si dispo, sinon un mix titre+texte.
+    return q.id || (q.answer + '||' + q.review);
+  }
+  function saveGameSession(){
+    if (!currentLevel || isAdminUnlocked || QUESTIONS.length === 0) return;
+    try {
+      const orderedKeys = playOrder.map(i => questionKey(QUESTIONS[i]));
+      const skippedKeys = skipStack.map(i => questionKey(QUESTIONS[i]));
+      const historyByKey = {};
+      history.forEach((h, i) => {
+        if (h && QUESTIONS[i]) historyByKey[questionKey(QUESTIONS[i])] = h;
+      });
+      localStorage.setItem(sessionKey(playerName), JSON.stringify({
+        level: currentLevel,
+        orderedKeys,
+        skippedKeys,
+        current,
+        score,
+        historyByKey,
+        rushTotalTime,
+        savedAt: Date.now()
+      }));
+    } catch (err){
+      // stockage indisponible : tant pis, pas de reprise possible mais le jeu continue normalement
+    }
+  }
+  function loadGameSession(name){
+    try {
+      const raw = localStorage.getItem(sessionKey(name));
+      return raw ? JSON.parse(raw) : null;
+    } catch (err){
+      return null;
+    }
+  }
+  function clearGameSession(name){
+    try {
+      localStorage.removeItem(sessionKey(name));
+    } catch (err){
+      // rien à faire
+    }
   }
 
   function renderLevelList(){
@@ -3741,12 +3907,14 @@
       pauseMessage.classList.add('hidden');
       reviewText.classList.remove('hidden');
       nextBtn.style.display = 'none';
+      skipRow.classList.add('hidden');
       return;
     }
     answerForm.style.display = '';
     posterBox.classList.add('hidden');
 
-    const q = QUESTIONS[current];
+    const realIndex = playOrder[current];
+    const q = QUESTIONS[realIndex];
     qCounter.textContent = `QUESTION ${current + 1} / ${QUESTIONS.length}`;
     reviewText.textContent = q.review;
     reviewText.classList.remove('hidden');
@@ -3759,6 +3927,10 @@
     commonPointsEl.innerHTML = '';
     nextBtn.style.display = 'none';
     nextBtn.textContent = 'SUIVANT →';
+    const isRushLevelForSkip = getLevelMode(currentLevel) === 'rush';
+    skipRow.classList.toggle('hidden', isRushLevelForSkip);
+    skipBtn.classList.toggle('hidden', current >= playOrder.length - 1);
+    backSkipBtn.classList.toggle('hidden', skipStack.length === 0);
 
     currentGuesses = [];
     questionAnswered = false;
@@ -3788,17 +3960,47 @@
     answerInput.focus();
 
     document.querySelectorAll('.frame').forEach(f => f.classList.remove('current'));
-    const curFrame = document.getElementById('frame-' + current);
+    const curFrame = document.getElementById('frame-' + realIndex);
     if (curFrame) curFrame.classList.add('current');
   }
 
+  let skipStack = [];
+
+  function skipQuestion(){
+    if (questionAnswered || current >= playOrder.length - 1) return;
+    if (getLevelMode(currentLevel) === 'rush') return;
+    const realIndex = playOrder[current];
+    playOrder.splice(current, 1);
+    playOrder.push(realIndex);
+    skipStack.push(realIndex);
+    playSelectSound();
+    renderQuestion();
+    saveGameSession();
+  }
+
+  function goToPreviousSkipped(){
+    if (questionAnswered) return;
+    if (getLevelMode(currentLevel) === 'rush') return;
+    if (skipStack.length === 0) return;
+    const realIndex = skipStack.pop();
+    const pos = playOrder.indexOf(realIndex);
+    if (pos === -1) return;
+    playOrder.splice(pos, 1);
+    playOrder.splice(current, 0, realIndex);
+    playSelectSound();
+    renderQuestion();
+    saveGameSession();
+  }
+
   function finishQuestion(solved){
-    history[current] = {
-      review: QUESTIONS[current].review,
-      correctAnswer: QUESTIONS[current].answer,
+    const realIndex = playOrder[current];
+    history[realIndex] = {
+      review: QUESTIONS[realIndex].review,
+      correctAnswer: QUESTIONS[realIndex].answer,
       guesses: currentGuesses.slice(),
       solved: solved
     };
+    saveGameSession();
   }
 
   async function showCommonPointsHint(guess, correctAnswer, attemptNumber){
@@ -3853,12 +4055,13 @@
   function checkAnswer(){
     if (questionAnswered || QUESTIONS.length === 0) return;
 
-    const q = QUESTIONS[current];
+    const realIndex = playOrder[current];
+    const q = QUESTIONS[realIndex];
     const guess = answerInput.value.trim();
     if (!guess) return;
 
     const isCorrect = isGuessCorrect(guess, q);
-    const frame = document.getElementById('frame-' + current);
+    const frame = document.getElementById('frame-' + realIndex);
 
     currentGuesses.push({ text: guess, correct: isCorrect });
 
@@ -3876,6 +4079,7 @@
       updateWalker();
       finishQuestion(true);
       nextBtn.style.display = 'inline-block';
+      skipRow.classList.add('hidden');
       playCorrectSound();
       showPoster(q.answer);
     } else if (getLevelMode(currentLevel) === 'rush'){
@@ -3910,6 +4114,7 @@
         if (frame) frame.classList.add('answered-wrong');
         finishQuestion(false);
         nextBtn.style.display = 'inline-block';
+        skipRow.classList.add('hidden');
       }
     }
   }
@@ -3932,6 +4137,7 @@
 
   function showResult(){
     accumulateRushTime(); // comptabilise le dernier segment si la partie s'est terminée sans repasser par renderQuestion
+    clearGameSession(playerName); // le niveau est terminé, plus rien à reprendre
     quizCard.classList.add('hidden');
     resultCard.classList.remove('hidden');
 
@@ -4007,6 +4213,8 @@
     current = 0;
     score = 0;
     history.length = 0;
+    playOrder = QUESTIONS.map((_, i) => i);
+    skipStack = [];
     resultCard.classList.add('hidden');
     quizCard.classList.remove('hidden');
     initFilmstrip();
@@ -4014,6 +4222,8 @@
     updateWalker();
   }
 
+  skipBtn.addEventListener('click', skipQuestion);
+  backSkipBtn.addEventListener('click', goToPreviousSkipped);
   nextBtn.addEventListener('click', nextQuestion);
   replayBtn.addEventListener('click', resetQuiz);
   answerForm.addEventListener('submit', (e) => {
