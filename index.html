@@ -3904,6 +3904,8 @@
       ? allQuestions.filter(q => q.level === currentLevel)
       : allQuestions;
     QUESTIONS = shuffleArray(pool);
+    playOrder = QUESTIONS.map((_, i) => i);
+    current = Math.min(current, Math.max(0, QUESTIONS.length - 1));
   }
 
   function initFilmstrip(){
@@ -4013,6 +4015,13 @@
     }
     answerForm.style.display = '';
     posterBox.classList.add('hidden');
+
+    if (playOrder.length !== QUESTIONS.length){
+      // Filet de sécurité : l'ordre de jeu n'a pas été initialisé/correctement mis à jour,
+      // on le reconstruit plutôt que de planter sur une question introuvable.
+      playOrder = QUESTIONS.map((_, i) => i);
+      current = Math.min(current, Math.max(0, QUESTIONS.length - 1));
+    }
 
     const realIndex = playOrder[current];
     const q = QUESTIONS[realIndex];
