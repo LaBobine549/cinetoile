@@ -1621,6 +1621,11 @@
           </div>
 
           <div class="field">
+            <label for="answerYearField">Année de sortie (facultatif, évite les mauvaises affiches en cas de remake/homonyme)</label>
+            <input type="text" id="answerYearField" placeholder="Ex : 2002" inputmode="numeric" maxlength="4">
+          </div>
+
+          <div class="field">
             <label for="aliasesField">Autres réponses acceptées (facultatif, séparées par des virgules)</label>
             <input type="text" id="aliasesField" placeholder="Ex : Mission Cléopâtre, Astérix Mission Cléopâtre">
           </div>
@@ -2370,14 +2375,22 @@
     }
   }
 
-  async function fetchMovieInfoTMDb(title){
+  async function fetchMovieInfoTMDb(title, expectedYear){
     if (!tmdbReady) return null;
     try {
       const searchRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&language=fr-FR&query=${encodeURIComponent(title)}`);
       const searchData = await searchRes.json();
       if (!searchData.results || searchData.results.length === 0) return null;
 
-      const movie = searchData.results[0];
+      let movie = searchData.results[0];
+      if (expectedYear){
+        // Si une année est précisée, on préfère le résultat qui correspond exactement
+        // (ou à une année près) plutôt que le premier résultat renvoyé par TMDb,
+        // pour éviter les mauvaises affiches en cas de remake/homonyme.
+        const exact = searchData.results.find(r => r.release_date && parseInt(r.release_date.slice(0, 4), 10) === expectedYear);
+        const close = !exact && searchData.results.find(r => r.release_date && Math.abs(parseInt(r.release_date.slice(0, 4), 10) - expectedYear) <= 1);
+        movie = exact || close || movie;
+      }
       const year = movie.release_date ? parseInt(movie.release_date.slice(0, 4), 10) : null;
       const genres = (movie.genre_ids || []).map(id => genreMap[id]).filter(Boolean);
       const posterUrl = movie.poster_path ? `https://image.tmdb.org/t/p/w342${movie.poster_path}` : null;
@@ -2399,17 +2412,17 @@
   let cachedAnswerInfo = null;
   let cachedAnswerKey = null;
 
-  async function getAnswerInfoTMDb(correctAnswer){
+  async function getAnswerInfoTMDb(correctAnswer, expectedYear){
     if (cachedAnswerKey === correctAnswer) return cachedAnswerInfo;
-    cachedAnswerInfo = await fetchMovieInfoTMDb(correctAnswer);
+    cachedAnswerInfo = await fetchMovieInfoTMDb(correctAnswer, expectedYear);
     cachedAnswerKey = correctAnswer;
     return cachedAnswerInfo;
   }
 
-  async function showPoster(correctAnswer){
+  async function showPoster(correctAnswer, expectedYear){
     posterBox.classList.add('hidden');
     if (!tmdbReady) return;
-    const info = await getAnswerInfoTMDb(correctAnswer);
+    const info = await getAnswerInfoTMDb(correctAnswer, expectedYear);
     if (!info || !info.posterUrl) return;
     posterImg.src = info.posterUrl;
     posterImg.alt = `Affiche de ${correctAnswer}`;
@@ -2500,6 +2513,7 @@
           answer: d.answer,
           aliases: d.aliases || [],
           level: d.level || 'Facile',
+          year: d.year || null,
           createdAt: d.createdAt || null
         });
       });
@@ -2516,6 +2530,7 @@
     try {
       const ref = await db.collection('critiques').add({
         review: q.review, answer: q.answer, aliases: q.aliases || [], level: q.level,
+        year: q.year || null,
         createdAt: q.createdAt || new Date().toISOString()
       });
       return ref.id;
@@ -2529,6 +2544,7 @@
     try {
       await db.collection('critiques').doc(id).set({
         review: q.review, answer: q.answer, aliases: q.aliases || [], level: q.level,
+        year: q.year || null,
         createdAt: q.createdAt || new Date().toISOString()
       });
     } catch (err){
@@ -3869,6 +3885,7 @@
   const reviewForm = document.getElementById('reviewForm');
   const reviewInput = document.getElementById('reviewInput');
   const answerField = document.getElementById('answerField');
+  const answerYearField = document.getElementById('answerYearField');
   const aliasesField = document.getElementById('aliasesField');
   const submitBtn = document.getElementById('submitBtn');
   const cancelEditBtn = document.getElementById('cancelEditBtn');
@@ -4115,7 +4132,7 @@
     saveGameSession();
   }
 
-  async function showCommonPointsHint(guess, correctAnswer, attemptNumber){
+  async function showCommonPointsHint(guess, correctAnswer, attemptNumber, expectedYear){
     const block = document.createElement('div');
     block.className = 'common-points-entry';
     const title = document.createElement('p');
@@ -4128,7 +4145,7 @@
     if (tmdbReady){
       const [guessInfo, answerInfo] = await Promise.all([
         fetchMovieInfoTMDb(guess),
-        getAnswerInfoTMDb(correctAnswer)
+        getAnswerInfoTMDb(correctAnswer, expectedYear)
       ]);
       if (guessInfo && answerInfo){
         pts = getCommonPointsTMDb(guessInfo, answerInfo);
@@ -4193,9 +4210,9 @@
       nextBtn.style.display = 'inline-block';
       skipRow.classList.add('hidden');
       playCorrectSound();
-      showPoster(q.answer);
+      showPoster(q.answer, q.year);
     } else if (getLevelMode(currentLevel) === 'rush'){
-      showCommonPointsHint(guess, q.answer, currentGuesses.length);
+      showCommonPointsHint(guess, q.answer, currentGuesses.length, q.year);
       playWrongSound();
       feedbackEl.textContent = 'RATE — CONTINUE, LE TEMPS COURT TOUJOURS !';
       feedbackEl.className = 'feedback wrong';
@@ -4206,7 +4223,7 @@
     } else {
       attemptsLeft = Math.max(0, attemptsLeft - 1);
       updateHearts();
-      showCommonPointsHint(guess, q.answer, currentGuesses.length);
+      showCommonPointsHint(guess, q.answer, currentGuesses.length, q.year);
       playWrongSound();
 
       if (attemptsLeft > 0){
@@ -4406,6 +4423,7 @@
   function clearForm(){
     reviewInput.value = '';
     answerField.value = '';
+    answerYearField.value = '';
     aliasesField.value = '';
     editingIndex = null;
     submitBtn.textContent = 'AJOUTER';
@@ -4421,6 +4439,8 @@
 
     const review = reviewInput.value.trim();
     const answer = answerField.value.trim();
+    const yearRaw = answerYearField.value.trim();
+    const year = /^\d{4}$/.test(yearRaw) ? parseInt(yearRaw, 10) : null;
     const aliases = aliasesField.value
       .split(',')
       .map(a => a.trim())
@@ -4438,7 +4458,7 @@
       return;
     }
 
-    const newQuestion = { review, answer, aliases, level };
+    const newQuestion = { review, answer, aliases, level, year };
 
     if (editingIndex !== null){
       const existingId = allQuestions[editingIndex].id;
@@ -4514,7 +4534,8 @@
 
         const p = document.createElement('p');
         const aliasText = (q.aliases && q.aliases.length) ? ` (alias : ${q.aliases.join(', ')})` : '';
-        p.textContent = `« ${q.review} » — Réponse : ${q.answer}${aliasText}`;
+        const yearText = q.year ? ` (${q.year})` : '';
+        p.textContent = `« ${q.review} » — Réponse : ${q.answer}${yearText}${aliasText}`;
 
         const actions = document.createElement('div');
         actions.className = 'item-actions';
@@ -4555,6 +4576,7 @@
     const q = allQuestions[idx];
     reviewInput.value = q.review;
     answerField.value = q.answer;
+    answerYearField.value = q.year || '';
     aliasesField.value = (q.aliases || []).join(', ');
     refreshLevelSelectOptions();
     levelSelect.value = q.level || 'Facile';
@@ -4600,6 +4622,7 @@
           answer: q.answer,
           aliases: q.aliases || [],
           level: q.level || 'Facile',
+          year: q.year || null,
           createdAt: q.createdAt || new Date().toISOString()
         }));
 
@@ -4655,7 +4678,7 @@
             typeof q.answer === 'string' && q.answer.trim()
           );
           if (valid){
-            allQuestions = data.map(q => ({ review: q.review, answer: q.answer, aliases: (q.aliases || []).slice(), level: q.level || 'Facile' }));
+            allQuestions = data.map(q => ({ review: q.review, answer: q.answer, aliases: (q.aliases || []).slice(), level: q.level || 'Facile', year: q.year || null }));
           }
         }
       } catch (err){
