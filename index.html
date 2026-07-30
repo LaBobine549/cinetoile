@@ -701,6 +701,20 @@
     color: var(--yellow);
   }
 
+  .player-group{
+    margin-bottom: 16px;
+    padding: 10px;
+    border: 2px solid var(--card-edge);
+    border-radius: var(--radius);
+    background: #0a0420;
+  }
+  .player-group-name{
+    font-family:'Press Start 2P', monospace;
+    font-size: 0.62rem;
+    color: var(--cyan);
+    margin: 0 0 8px;
+  }
+
   .final-summary{
     text-align: left;
     max-height: 320px;
@@ -1563,12 +1577,17 @@
   <section class="editor-panel hidden" id="leaderboardPanel" aria-label="Classement complet">
     <h2>CLASSEMENT</h2>
     <p class="hint">Statistiques de tous les joueurs, mises à jour à chaque partie.</p>
-    <div class="field">
+    <div class="skip-row" style="margin-bottom: 14px;">
+      <button type="button" class="ghost-btn" id="lbViewByLevelBtn">PAR NIVEAU</button>
+      <button type="button" class="ghost-btn" id="lbViewByPlayerBtn">PAR JOUEUR</button>
+    </div>
+    <div class="field" id="leaderboardLevelField">
       <label for="leaderboardLevelSelect">Niveau</label>
       <select id="leaderboardLevelSelect"></select>
     </div>
     <p class="stats-line" id="myStatsSummary"></p>
     <div id="adminLeaderboardList"></div>
+    <div id="adminByPlayerList" class="hidden"></div>
     <div class="editor-actions">
       <button type="button" class="ghost-btn" id="closeLeaderboardBtn">FERMER</button>
     </div>
@@ -2284,6 +2303,11 @@
   const leaderboardPanel = document.getElementById('leaderboardPanel');
   const adminLeaderboardList = document.getElementById('adminLeaderboardList');
   const leaderboardLevelSelect = document.getElementById('leaderboardLevelSelect');
+  const leaderboardLevelField = document.getElementById('leaderboardLevelField');
+  const lbViewByLevelBtn = document.getElementById('lbViewByLevelBtn');
+  const lbViewByPlayerBtn = document.getElementById('lbViewByPlayerBtn');
+  const adminByPlayerList = document.getElementById('adminByPlayerList');
+  let leaderboardViewMode = 'level';
   const closeLeaderboardBtn = document.getElementById('closeLeaderboardBtn');
   const profilePanel = document.getElementById('profilePanel');
   const profileStatsList = document.getElementById('profileStatsList');
@@ -2522,12 +2546,12 @@
   async function loadLeaderboardFromCloud(highlight, filterLevel){
     if (!firebaseReady) return;
     try {
-      const snapshot = await db.collection('scores').get();
+      const snapshot = await db.collectionGroup('levels').get();
       leaderboard.length = 0;
       snapshot.forEach(doc => {
         const d = doc.data();
         leaderboard.push({
-          key: doc.id,
+          key: doc.ref.parent.parent.id + '__' + doc.id,
           name: d.name,
           level: d.level || 'Facile',
           bestScore: d.bestScore,
@@ -2541,7 +2565,8 @@
       });
       renderLeaderboard(highlight, filterLevel);
     } catch (err){
-      // Pas de connexion ou config pas encore prête : on garde le classement local tel quel.
+      // Pas de connexion, config pas encore prête, ou index de la requête pas encore activé
+      // (Firestore propose un lien pour l'activer en un clic la première fois que ça arrive).
     }
   }
 
@@ -2549,14 +2574,17 @@
     return normalize(name) + '__' + normalize(level);
   }
 
-  // Une fiche par pseudo ET par niveau : chaque partie met à jour les stats
-  // de CE niveau précisément, pour avoir un classement séparé par niveau/mode.
+  // Structure : players/{pseudo normalisé}/levels/{niveau normalisé}
+  // Un joueur = un document, avec toutes ses fiches de niveaux rangées dedans.
   async function upsertPlayerStatsCloud(name, score, total, level, time){
     if (!firebaseReady) return null;
+    const playerId = normalize(name);
+    if (!playerId) return null;
+    const levelId = normalize(level);
     const key = scoreKey(name, level);
-    if (!normalize(name)) return null;
     try {
-      const ref = db.collection('scores').doc(key);
+      const playerRef = db.collection('players').doc(playerId);
+      const ref = playerRef.collection('levels').doc(levelId);
       const doc = await ref.get();
       const hasTime = time != null;
 
@@ -2579,6 +2607,7 @@
           updated.bestTime = isNewBestTime ? time : (d.bestTime != null ? d.bestTime : time);
           updated.lastTime = time;
         }
+        await playerRef.set({ name: name }, { merge: true });
         await ref.set(updated, { merge: true });
         return { key, ...updated };
       } else {
@@ -2596,6 +2625,7 @@
           created.bestTime = time;
           created.lastTime = time;
         }
+        await playerRef.set({ name: name }, { merge: true });
         await ref.set(created);
         return { key, ...created };
       }
@@ -3310,11 +3340,79 @@
     });
   }
 
+  function renderAdminByPlayer(){
+    adminByPlayerList.innerHTML = '';
+
+    const byName = {};
+    leaderboard.forEach(entry => {
+      const nameKey = normalize(entry.name);
+      if (!byName[nameKey]) byName[nameKey] = { name: entry.name, levels: [] };
+      byName[nameKey].levels.push(entry);
+    });
+
+    const players = Object.values(byName).sort((a, b) => a.name.localeCompare(b.name));
+
+    if (players.length === 0){
+      adminByPlayerList.innerHTML = '<p class="empty-note">Personne n\'a encore joué.</p>';
+      return;
+    }
+
+    players.forEach(player => {
+      const group = document.createElement('div');
+      group.className = 'player-group';
+
+      const title = document.createElement('p');
+      title.className = 'player-group-name';
+      title.textContent = `👤 ${player.name}`;
+      group.appendChild(title);
+
+      player.levels
+        .slice()
+        .sort((a, b) => a.level.localeCompare(b.level))
+        .forEach(entry => {
+          const isRush = getLevelMode(entry.level) === 'rush';
+          const row = document.createElement('div');
+          row.className = 'leaderboard-item';
+          const left = document.createElement('span');
+          left.textContent = entry.level;
+          const right = document.createElement('span');
+          right.textContent = (isRush && entry.bestTime != null)
+            ? `${formatTime(entry.bestTime)} — ${entry.gamesPlayed} partie${entry.gamesPlayed > 1 ? 's' : ''}`
+            : `${entry.bestScore} / ${entry.bestTotal} — ${entry.gamesPlayed} partie${entry.gamesPlayed > 1 ? 's' : ''}`;
+          row.appendChild(left);
+          row.appendChild(right);
+          group.appendChild(row);
+        });
+
+      adminByPlayerList.appendChild(group);
+    });
+  }
+
+  function setLeaderboardViewMode(mode){
+    leaderboardViewMode = mode;
+    const isByPlayer = mode === 'player';
+    leaderboardLevelField.classList.toggle('hidden', isByPlayer);
+    adminLeaderboardList.classList.toggle('hidden', isByPlayer);
+    adminByPlayerList.classList.toggle('hidden', !isByPlayer);
+    myStatsSummary.classList.toggle('hidden', isByPlayer);
+    lbViewByLevelBtn.classList.toggle('playing', !isByPlayer);
+    lbViewByPlayerBtn.classList.toggle('playing', isByPlayer);
+    if (isByPlayer){
+      renderAdminByPlayer();
+    } else {
+      renderAdminLeaderboard();
+    }
+  }
+
+  lbViewByLevelBtn.addEventListener('click', () => setLeaderboardViewMode('level'));
+  lbViewByPlayerBtn.addEventListener('click', () => setLeaderboardViewMode('player'));
+
   leaderboardLevelSelect.addEventListener('change', renderAdminLeaderboard);
 
   viewLeaderboardBtn.addEventListener('click', async () => {
     settingsDropdown.classList.add('hidden');
     leaderboardShowMine = false;
+    setLeaderboardViewMode('level');
     populateLeaderboardLevelSelect(currentLevel);
     renderAdminLeaderboard();
     leaderboardPanel.classList.remove('hidden');
