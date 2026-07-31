@@ -27,6 +27,11 @@
 
   *{ box-sizing: border-box; }
 
+  /* Onglet en arrière-plan : on coupe toutes les animations décoratives pour économiser la batterie */
+  html.tab-hidden, html.tab-hidden *{
+    animation-play-state: paused !important;
+  }
+
   html,body{
     margin:0;
     min-height:100%;
@@ -964,44 +969,6 @@
     text-align: center;
   }
 
-  .now-playing{
-    position: fixed;
-    left: 14px;
-    bottom: 14px;
-    z-index: 90;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: #140a28;
-    border: 2px solid var(--cyan);
-    border-radius: var(--radius);
-    padding: 10px 14px;
-    box-shadow: 3px 3px 0 rgba(var(--cyan-rgb),.35), 0 8px 20px rgba(0,0,0,.5);
-    max-width: min(80vw, 300px);
-  }
-  .now-playing-icon{ font-size: 1.3rem; flex-shrink: 0; }
-  .now-playing-text{
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-  }
-  .now-playing-title{
-    font-family: 'VT323', monospace;
-    font-size: 1.1rem;
-    color: var(--cyan);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .now-playing-artist{
-    font-family: 'VT323', monospace;
-    font-size: 0.9rem;
-    color: var(--muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
   .pause-message{
     font-family: 'VT323', monospace;
     font-size: 1.5rem;
@@ -1486,16 +1453,6 @@
 
   <div class="fire-overlay" id="fireOverlay" aria-hidden="true"></div>
 
-  <div id="ytPlayerContainer" style="position:fixed; width:1px; height:1px; overflow:hidden; opacity:0; pointer-events:none;"></div>
-
-  <div class="now-playing hidden" id="nowPlaying">
-    <span class="now-playing-icon">🎵</span>
-    <div class="now-playing-text">
-      <span class="now-playing-title" id="nowPlayingTitle"></span>
-      <span class="now-playing-artist" id="nowPlayingArtist"></span>
-    </div>
-  </div>
-
   <div class="marquee">
     <div class="marquee-frame">
       <h1 class="title">CINETOILE</h1>
@@ -1509,7 +1466,6 @@
       <button class="settings-gear-btn" id="settingsGearBtn" aria-label="Ouvrir le menu réglages">⚙️</button>
       <div class="settings-dropdown hidden" id="settingsDropdown">
         <button class="ghost-btn" id="editorToggle">✎ GERER</button>
-        <button class="ghost-btn" id="musicToggle">🔇 MUSIQUE</button>
         <button class="ghost-btn playing" id="sfxToggle">🔊 SONS</button>
         <button class="ghost-btn" id="viewLeaderboardBtn">🏆 CLASSEMENT</button>
         <button class="ghost-btn" id="myStatsBtn">👤 PROFIL</button>
@@ -1680,27 +1636,6 @@
           <h3>GERER LES NIVEAUX</h3>
           <p class="hint">Image (URL) et animation de clic pour chaque niveau.</p>
           <div id="levelManageList"></div>
-        </div>
-      </div>
-
-      <div class="editor-column">
-        <div class="custom-list">
-          <h3>MUSIQUE PERSONNALISEE</h3>
-          <p class="hint">Colle un lien direct vers un fichier audio, ou un lien YouTube. Laisse vide pour revenir à la musique par défaut.</p>
-          <div class="field">
-            <label for="musicUrlField">Lien (audio direct ou YouTube)</label>
-            <input type="text" id="musicUrlField" placeholder="https://... ou https://www.youtube.com/watch?v=...">
-          </div>
-          <div class="field">
-            <label for="musicTitleField">Titre de la musique</label>
-            <input type="text" id="musicTitleField" placeholder="Ex : Nightcall">
-          </div>
-          <div class="field">
-            <label for="musicArtistField">Artiste (ou nom de la chaîne YouTube si pas d'artiste précis)</label>
-            <input type="text" id="musicArtistField" placeholder="Ex : Kavinsky">
-          </div>
-          <button type="button" class="primary-btn" id="saveMusicBtn">ENREGISTRER LA MUSIQUE</button>
-          <div class="editor-form-msg" id="musicFormMsg"></div>
         </div>
       </div>
 
@@ -2118,8 +2053,16 @@
 
   function startRushShakeLoop(){
     if (rushShakeRAF) return;
-    const tick = () => {
+    let lastUpdate = 0;
+    const tick = (now) => {
       if (!rushActive || rushPaused){ rushShakeRAF = null; return; }
+      if (now - lastUpdate < 120){
+        // On ne recalcule pas à chaque image (60x/sec) : inutile pour cet effet
+        // et coûteux en batterie. Une dizaine de fois par seconde suffit largement.
+        rushShakeRAF = requestAnimationFrame(tick);
+        return;
+      }
+      lastUpdate = now;
       const track = rushGaugeFill.parentElement;
       const trackWidth = track.offsetWidth;
       const currentWidth = rushGaugeFill.getBoundingClientRect().width;
@@ -3157,7 +3100,6 @@
     root.setProperty('--bg-deep', theme.colors.bgDeep);
     root.setProperty('--purple-rgb', theme.colors.purpleRgb);
     root.setProperty('--cyan-rgb', theme.colors.cyanRgb);
-    setMusicPreset(theme.music);
 
     if (themeKey === 'inferno'){
       startFireAmbience();
@@ -3690,8 +3632,7 @@
     lbImportInput.value = '';
   });
 
-  // ---------- Moteur audio 8-bit (généré en direct, aucun fichier importé) ----------
-  const musicToggle = document.getElementById('musicToggle');
+  // ---------- Effets sonores 8-bit (générés en direct, aucun fichier importé) ----------
   const sfxToggle = document.getElementById('sfxToggle');
   sfxToggle.addEventListener('click', () => {
     sfxEnabled = !sfxEnabled;
@@ -3705,45 +3646,8 @@
     }
   });
 
-  const NOTES = {
-    G2:98.00, A2:110.00,
-    C3:130.81, D3:146.83, E3:164.81, F3:174.61, G3:196.00, A3:220.00, B3:246.94,
-    C4:261.63, D4:293.66, E4:329.63, F4:349.23, G4:392.00, A4:440.00, B4:493.88,
-    C5:523.25, D5:587.33, E5:659.25, F5:698.46, G5:783.99, A5:880.00
-  };
-
-  // Compositions 100% originales, une par ambiance de thème.
-  const MUSIC_PRESETS = {
-    dark: {
-      // Mineure, ostinato grave et répétitif — ambiance sombre et mécanique.
-      lead: ['A3','A3','C4','A3','A3','A3','E4','A3','G3','G3','A3','G3','G3','G3','D4','G3'],
-      bass: ['A2','A2','G2','A2'],
-      step: 0.2
-    },
-    arcade: {
-      // Majeure, arpèges enjoués — ambiance arcade énergique.
-      lead: ['C4','E4','G4','E4','C4','E4','G4','E4','D4','F4','A4','F4','D4','F4','A4','F4'],
-      bass: ['C3','G3','A3','F3'],
-      step: 0.16
-    },
-    mystery: {
-      // Notes espacées, tempo lent — ambiance suspendue et mystérieuse.
-      lead: ['E4', null, 'G4', null, 'E4', null, 'D4', null, 'C4', null, null, null, 'B3', null, null, null],
-      bass: ['E3', 'E3', 'C3', 'C3'],
-      step: 0.26
-    }
-  };
-  let currentMusic = MUSIC_PRESETS.dark;
-
-  function setMusicPreset(key){
-    currentMusic = MUSIC_PRESETS[key] || MUSIC_PRESETS.dark;
-  }
-
   let audioCtx = null;
   let masterGain = null;
-  let musicGain = null;
-  let musicEnabled = false;
-  let musicTimer = null;
 
   function initAudio(){
     if (audioCtx){
@@ -3753,14 +3657,10 @@
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return Promise.resolve();
     audioCtx = new AC();
-    // Bus effets sonores : volume fixe, jamais coupé par le bouton musique.
+    // Bus effets sonores : volume fixe.
     masterGain = audioCtx.createGain();
     masterGain.gain.value = 0.15;
     masterGain.connect(audioCtx.destination);
-    // Bus musique : c'est celui-ci que le bouton musique allume/coupe.
-    musicGain = audioCtx.createGain();
-    musicGain.gain.value = 0;
-    musicGain.connect(audioCtx.destination);
     if (audioCtx.state === 'suspended') return audioCtx.resume().catch(() => {});
     return Promise.resolve();
   }
@@ -3780,144 +3680,11 @@
     osc.stop(time + duration + 0.02);
   }
 
-  function scheduleMusicLoop(){
-    if (!musicEnabled || !audioCtx) return;
-    const startTime = audioCtx.currentTime + 0.05;
-    const { lead, bass, step } = currentMusic;
-
-    lead.forEach((note, i) => {
-      if (note) playTone(NOTES[note], startTime + i * step, step * 0.9, 'square', 0.05, musicGain);
-    });
-    bass.forEach((note, i) => {
-      if (note) playTone(NOTES[note], startTime + i * step * 4, step * 4 * 0.9, 'triangle', 0.07, musicGain);
-    });
-
-    const loopDuration = lead.length * step;
-    musicTimer = setTimeout(scheduleMusicLoop, loopDuration * 1000);
-  }
-
-  async function startMusic(){
-    await initAudio();
-    if (!audioCtx) return;
-    musicEnabled = true;
-    const now = audioCtx.currentTime;
-    musicGain.gain.cancelScheduledValues(now);
-    musicGain.gain.setValueAtTime(musicGain.gain.value, now);
-    musicGain.gain.linearRampToValueAtTime(0.15, now + 0.03);
-    scheduleMusicLoop();
-  }
-
-  function stopMusic(){
-    musicEnabled = false;
-    if (musicTimer) clearTimeout(musicTimer);
-    if (musicGain && audioCtx){
-      const now = audioCtx.currentTime;
-      musicGain.gain.cancelScheduledValues(now);
-      musicGain.gain.setValueAtTime(musicGain.gain.value, now);
-      musicGain.gain.linearRampToValueAtTime(0.0001, now + 0.03);
-    }
-  }
-
-  // ---------- Musique personnalisée (configurée par l'admin, via URL) ----------
-  let customMusic = { url: '', title: '', artist: '' };
-  let musicSourceType = 'chiptune'; // 'chiptune' | 'youtube' | 'audio'
-  let ytPlayer = null;
-  let ytApiLoading = false;
-  let customAudioEl = null;
-
-  const musicUrlField = document.getElementById('musicUrlField');
-  const musicTitleField = document.getElementById('musicTitleField');
-  const musicArtistField = document.getElementById('musicArtistField');
-  const saveMusicBtn = document.getElementById('saveMusicBtn');
-  const musicFormMsg = document.getElementById('musicFormMsg');
-  const nowPlaying = document.getElementById('nowPlaying');
-  const nowPlayingTitle = document.getElementById('nowPlayingTitle');
-  const nowPlayingArtist = document.getElementById('nowPlayingArtist');
   const rulesEnabledToggle = document.getElementById('rulesEnabledToggle');
   const rulesClassicField = document.getElementById('rulesClassicField');
   const rulesRushField = document.getElementById('rulesRushField');
   const saveRulesBtn = document.getElementById('saveRulesBtn');
   const rulesFormMsg = document.getElementById('rulesFormMsg');
-
-  function extractYouTubeId(url){
-    const patterns = [
-      /youtu\.be\/([a-zA-Z0-9_-]{11})/,
-      /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
-      /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
-      /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/
-    ];
-    for (const re of patterns){
-      const m = url.match(re);
-      if (m) return m[1];
-    }
-    return null;
-  }
-
-  function loadYouTubeAPI(){
-    return new Promise(resolve => {
-      if (window.YT && window.YT.Player){ resolve(); return; }
-      if (ytApiLoading){
-        const check = setInterval(() => {
-          if (window.YT && window.YT.Player){ clearInterval(check); resolve(); }
-        }, 100);
-        return;
-      }
-      ytApiLoading = true;
-      const tag = document.createElement('script');
-      tag.src = 'https://www.youtube.com/iframe_api';
-      document.head.appendChild(tag);
-      window.onYouTubeIframeAPIReady = () => resolve();
-    });
-  }
-
-  async function ensureYouTubePlayer(videoId){
-    await loadYouTubeAPI();
-    if (ytPlayer && ytPlayer.loadVideoById){
-      ytPlayer.loadVideoById(videoId);
-      return ytPlayer;
-    }
-    return new Promise(resolve => {
-      ytPlayer = new YT.Player('ytPlayerContainer', {
-        height: '1',
-        width: '1',
-        videoId: videoId,
-        playerVars: { autoplay: 0, controls: 0, loop: 1, playlist: videoId },
-        events: {
-          onReady: () => resolve(ytPlayer),
-          onStateChange: (e) => {
-            // Filet de sécurité : si le "loop" natif de YouTube ne s'applique pas,
-            // on relance nous-mêmes la vidéo depuis le début à la fin de la lecture.
-            if (e.data === YT.PlayerState.ENDED){
-              ytPlayer.seekTo(0);
-              ytPlayer.playVideo();
-            }
-          }
-        }
-      });
-    });
-  }
-
-  async function loadMusicConfigFromCloud(){
-    if (!firebaseReady) return;
-    try {
-      const doc = await db.collection('config').doc('music').get();
-      if (doc.exists){
-        const d = doc.data();
-        customMusic = { url: d.url || '', title: d.title || '', artist: d.artist || '' };
-      }
-    } catch (err){
-      // pas de config trouvée : on garde la musique chiptune par défaut
-    }
-  }
-
-  async function saveMusicConfigToCloud(){
-    if (!firebaseReady) return;
-    try {
-      await db.collection('config').doc('music').set(customMusic);
-    } catch (err){
-      // échec silencieux : la config reste au moins active pour cette session
-    }
-  }
 
   let rulesConfig = {
     enabled: false,
@@ -3951,75 +3718,6 @@
     }
   }
 
-  function updateNowPlayingWidget(show){
-    if (show && customMusic.url){
-      nowPlayingTitle.textContent = customMusic.title || 'Musique personnalisée';
-      nowPlayingArtist.textContent = customMusic.artist || '';
-      nowPlaying.classList.remove('hidden');
-    } else {
-      nowPlaying.classList.add('hidden');
-    }
-  }
-
-  async function startCustomMusic(){
-    const ytId = extractYouTubeId(customMusic.url);
-    try {
-      if (ytId){
-        musicSourceType = 'youtube';
-        const player = await ensureYouTubePlayer(ytId);
-        if (player.setVolume) player.setVolume(40);
-        if (player.playVideo) player.playVideo();
-      } else {
-        musicSourceType = 'audio';
-        if (!customAudioEl){
-          customAudioEl = new Audio(customMusic.url);
-          customAudioEl.loop = true;
-          customAudioEl.volume = 0.4;
-        } else if (customAudioEl.src !== customMusic.url){
-          customAudioEl.src = customMusic.url;
-        }
-        await customAudioEl.play().catch(() => {});
-      }
-      updateNowPlayingWidget(true);
-    } catch (err){
-      // lecture impossible (lien invalide, etc.) : on n'affiche pas le mini-cadre
-    }
-  }
-
-  function stopCustomMusic(){
-    if (musicSourceType === 'youtube' && ytPlayer && ytPlayer.pauseVideo){
-      ytPlayer.pauseVideo();
-    }
-    if (customAudioEl){
-      customAudioEl.pause();
-    }
-    updateNowPlayingWidget(false);
-  }
-
-  saveMusicBtn.addEventListener('click', async () => {
-    customMusic = {
-      url: musicUrlField.value.trim(),
-      title: musicTitleField.value.trim(),
-      artist: musicArtistField.value.trim()
-    };
-    await saveMusicConfigToCloud();
-
-    if (musicEnabled){
-      stopMusic();
-      stopCustomMusic();
-      musicEnabled = false;
-      musicToggle.textContent = '🔇 MUSIQUE';
-      musicToggle.classList.remove('playing');
-    }
-
-    musicFormMsg.textContent = 'Musique enregistrée !';
-    musicFormMsg.className = 'editor-form-msg ok';
-    setTimeout(() => {
-      musicFormMsg.textContent = '';
-      musicFormMsg.className = 'editor-form-msg';
-    }, 2000);
-  });
-
   saveRulesBtn.addEventListener('click', async () => {
     rulesConfig = {
       enabled: rulesEnabledToggle.value === 'on',
@@ -4034,24 +3732,6 @@
       rulesFormMsg.textContent = '';
       rulesFormMsg.className = 'editor-form-msg';
     }, 2000);
-  });
-
-  musicToggle.addEventListener('click', async () => {
-    if (musicEnabled){
-      if (customMusic.url) stopCustomMusic(); else stopMusic();
-      musicEnabled = false;
-      musicToggle.textContent = '🔇 MUSIQUE';
-      musicToggle.classList.remove('playing');
-    } else {
-      if (customMusic.url){
-        await startCustomMusic();
-        musicEnabled = true;
-      } else {
-        await startMusic();
-      }
-      musicToggle.textContent = '🔊 MUSIQUE';
-      musicToggle.classList.add('playing');
-    }
   });
 
   async function playCorrectSound(){
@@ -4865,6 +4545,10 @@
     formMsg.className = 'editor-form-msg ok';
   });
 
+  document.addEventListener('visibilitychange', () => {
+    document.documentElement.classList.toggle('tab-hidden', document.hidden);
+  });
+
   async function initApp(){
     await loadLevelsFromCloud();
     const cloudLoaded = await loadCritiquesFromCloud();
@@ -4896,10 +4580,6 @@
     });
 
     await initTMDb();
-    await loadMusicConfigFromCloud();
-    musicUrlField.value = customMusic.url;
-    musicTitleField.value = customMusic.title;
-    musicArtistField.value = customMusic.artist;
 
     await loadRulesConfigFromCloud();
     rulesEnabledToggle.value = rulesConfig.enabled ? 'on' : 'off';
