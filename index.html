@@ -1555,7 +1555,7 @@
     <div id="adminLeaderboardList"></div>
     <div id="adminByPlayerList" class="hidden"></div>
     <div class="editor-actions">
-      <button type="button" class="ghost-btn" id="migrateScoresBtn">⭱ MIGRER LES ANCIENS SCORES</button>
+      <button type="button" class="ghost-btn hidden" id="migrateScoresBtn">⭱ MIGRER LES ANCIENS SCORES</button>
       <button type="button" class="ghost-btn" id="closeLeaderboardBtn">FERMER</button>
     </div>
     <div class="editor-form-msg" id="migrateScoresMsg"></div>
@@ -4281,6 +4281,7 @@
       playerName = 'ADMIN';
       editorToggle.style.display = '';
       viewLeaderboardBtn.style.display = '';
+      migrateScoresBtn.classList.remove('hidden');
       lbAdminRow.classList.remove('hidden');
       adminGate.classList.add('hidden');
       startScreen.classList.add('hidden');
