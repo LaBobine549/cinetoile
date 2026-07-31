@@ -1534,7 +1534,7 @@
   <div class="rules-screen hidden" id="rulesScreen">
     <div class="ticket start-ticket">
       <div class="ticket-label"><span class="slash-heading"><span>REGLES DU JEU</span></span></div>
-      <p class="rules-text">
+      <p class="rules-text" id="rulesTextEl">
         Bienvenu.e dans Cinétoile, le jeu qui affiche les pires critiques des meilleurs films du 7ème art.
         Le principe est simple : après avoir entré votre pseudo, vous devrez deviner le film à partir de sa critique assassine.
         Vous avez 5 essais par film. Si vous vous trompez, pas de panique : le jeu vous indiquera ce que votre film
@@ -1699,6 +1699,30 @@
           </div>
           <button type="button" class="primary-btn" id="saveMusicBtn">ENREGISTRER LA MUSIQUE</button>
           <div class="editor-form-msg" id="musicFormMsg"></div>
+        </div>
+      </div>
+
+      <div class="editor-column">
+        <div class="custom-list">
+          <h3>REGLES DU JEU</h3>
+          <p class="hint">Décide si les règles s'affichent pour les joueurs, et personnalise leur texte selon le mode.</p>
+          <div class="field">
+            <label for="rulesEnabledToggle">Affichage aux joueurs</label>
+            <select id="rulesEnabledToggle">
+              <option value="off">Masquées (aucune règle affichée)</option>
+              <option value="on">Affichées avant de jouer</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="rulesClassicField">Texte — Mode Classique</label>
+            <textarea id="rulesClassicField" rows="4" placeholder="Règles affichées avant d'entrer dans le sous-menu Classique..."></textarea>
+          </div>
+          <div class="field">
+            <label for="rulesRushField">Texte — Mode Rush</label>
+            <textarea id="rulesRushField" rows="4" placeholder="Règles affichées avant d'entrer dans le sous-menu Rush..."></textarea>
+          </div>
+          <button type="button" class="primary-btn" id="saveRulesBtn">ENREGISTRER LES REGLES</button>
+          <div class="editor-form-msg" id="rulesFormMsg"></div>
         </div>
       </div>
 
@@ -2259,6 +2283,7 @@
     rushModePanel.classList.add('hidden');
     rulesScreen.classList.add('hidden');
     pendingRulesThenClassic = false;
+    pendingRulesThenRush = false;
     levelScreenHint.textContent = 'Sélectionne un mode de jeu.';
     resetTheme();
 
@@ -2275,15 +2300,22 @@
   }
 
   let pendingRulesThenClassic = false;
+  let pendingRulesThenRush = false;
 
   chooseClassicBtn.addEventListener('click', () => {
     playSelectSound();
     playLevelAnimation(chooseClassicBtn, 'pulse');
     setTimeout(() => {
       modeSelectView.classList.add('hidden');
-      pendingRulesThenClassic = true;
-      rulesScreen.classList.remove('hidden');
-      rulesScreen.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (rulesConfig.enabled){
+        pendingRulesThenClassic = true;
+        rulesTextEl.textContent = rulesConfig.classicText;
+        rulesScreen.classList.remove('hidden');
+        rulesScreen.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        classicModePanel.classList.remove('hidden');
+        levelScreenHint.textContent = 'Retrouve le film assassiné.';
+      }
     }, 220);
   });
 
@@ -2292,9 +2324,16 @@
     playLevelAnimation(chooseRushBtn, 'glitch');
     setTimeout(() => {
       modeSelectView.classList.add('hidden');
-      rushModePanel.classList.remove('hidden');
-      levelScreenHint.textContent = "J'y vais mais j'ai peur.";
       applyTheme('inferno');
+      if (rulesConfig.enabled){
+        pendingRulesThenRush = true;
+        rulesTextEl.textContent = rulesConfig.rushText;
+        rulesScreen.classList.remove('hidden');
+        rulesScreen.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        rushModePanel.classList.remove('hidden');
+        levelScreenHint.textContent = "J'y vais mais j'ai peur.";
+      }
     }, 220);
   });
 
@@ -2323,6 +2362,7 @@
     backToLevelBtn.classList.toggle('hidden', !inGame);
   }
   const rulesScreen = document.getElementById('rulesScreen');
+  const rulesTextEl = document.getElementById('rulesTextEl');
   const fireOverlay = document.getElementById('fireOverlay');
   const rulesToggleBtn = document.getElementById('rulesToggleBtn');
   const closeRulesBtn = document.getElementById('closeRulesBtn');
@@ -2835,6 +2875,10 @@
       pendingRulesThenClassic = false;
       classicModePanel.classList.remove('hidden');
       levelScreenHint.textContent = 'Retrouve le film assassiné.';
+    } else if (pendingRulesThenRush){
+      pendingRulesThenRush = false;
+      rushModePanel.classList.remove('hidden');
+      levelScreenHint.textContent = "J'y vais mais j'ai peur.";
     }
   });
 
@@ -3728,6 +3772,11 @@
   const nowPlaying = document.getElementById('nowPlaying');
   const nowPlayingTitle = document.getElementById('nowPlayingTitle');
   const nowPlayingArtist = document.getElementById('nowPlayingArtist');
+  const rulesEnabledToggle = document.getElementById('rulesEnabledToggle');
+  const rulesClassicField = document.getElementById('rulesClassicField');
+  const rulesRushField = document.getElementById('rulesRushField');
+  const saveRulesBtn = document.getElementById('saveRulesBtn');
+  const rulesFormMsg = document.getElementById('rulesFormMsg');
 
   function extractYouTubeId(url){
     const patterns = [
@@ -3809,6 +3858,38 @@
     }
   }
 
+  let rulesConfig = {
+    enabled: false,
+    classicText: "Bienvenu.e dans Cinétoile, le jeu qui affiche les pires critiques des meilleurs films du 7ème art. Le principe est simple : après avoir entré votre pseudo, vous devrez deviner le film à partir de sa critique assassine. Vous avez 5 essais par film. Si vous vous trompez, pas de panique : le jeu vous indiquera ce que votre film et celui que vous cherchez ont en commun (ex : genre, acteurs, année, etc.).",
+    rushText: "En mode Rush, une jauge de temps remplace les essais : trouvez le film avant qu'elle ne se vide ! Chaque bonne réponse relance la jauge, mais elle rétrécit un peu plus à chaque question."
+  };
+
+  async function loadRulesConfigFromCloud(){
+    if (!firebaseReady) return;
+    try {
+      const doc = await db.collection('config').doc('rules').get();
+      if (doc.exists){
+        const d = doc.data();
+        rulesConfig = {
+          enabled: !!d.enabled,
+          classicText: d.classicText || rulesConfig.classicText,
+          rushText: d.rushText || rulesConfig.rushText
+        };
+      }
+    } catch (err){
+      // pas de config trouvée : les règles restent masquées par défaut
+    }
+  }
+
+  async function saveRulesConfigToCloud(){
+    if (!firebaseReady) return;
+    try {
+      await db.collection('config').doc('rules').set(rulesConfig);
+    } catch (err){
+      // échec silencieux : la config reste au moins active pour cette session
+    }
+  }
+
   function updateNowPlayingWidget(show){
     if (show && customMusic.url){
       nowPlayingTitle.textContent = customMusic.title || 'Musique personnalisée';
@@ -3875,6 +3956,22 @@
     setTimeout(() => {
       musicFormMsg.textContent = '';
       musicFormMsg.className = 'editor-form-msg';
+    }, 2000);
+  });
+
+  saveRulesBtn.addEventListener('click', async () => {
+    rulesConfig = {
+      enabled: rulesEnabledToggle.value === 'on',
+      classicText: rulesClassicField.value.trim() || rulesConfig.classicText,
+      rushText: rulesRushField.value.trim() || rulesConfig.rushText
+    };
+    await saveRulesConfigToCloud();
+
+    rulesFormMsg.textContent = 'Règles enregistrées !';
+    rulesFormMsg.className = 'editor-form-msg ok';
+    setTimeout(() => {
+      rulesFormMsg.textContent = '';
+      rulesFormMsg.className = 'editor-form-msg';
     }, 2000);
   });
 
@@ -4742,6 +4839,11 @@
     musicUrlField.value = customMusic.url;
     musicTitleField.value = customMusic.title;
     musicArtistField.value = customMusic.artist;
+
+    await loadRulesConfigFromCloud();
+    rulesEnabledToggle.value = rulesConfig.enabled ? 'on' : 'off';
+    rulesClassicField.value = rulesConfig.classicText;
+    rulesRushField.value = rulesConfig.rushText;
 
     rebuildPool();
     initFilmstrip();
