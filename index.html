@@ -1607,8 +1607,10 @@
     <div id="adminLeaderboardList"></div>
     <div id="adminByPlayerList" class="hidden"></div>
     <div class="editor-actions">
+      <button type="button" class="ghost-btn" id="migrateScoresBtn">⭱ MIGRER LES ANCIENS SCORES</button>
       <button type="button" class="ghost-btn" id="closeLeaderboardBtn">FERMER</button>
     </div>
+    <div class="editor-form-msg" id="migrateScoresMsg"></div>
   </section>
 
   <section class="editor-panel hidden" id="profilePanel" aria-label="Profil du joueur">
@@ -1853,10 +1855,10 @@
     }, 400);
   })();
 
-  function playTVFadeSound(){
+  async function playTVFadeSound(){
     if (!sfxEnabled) return;
     try {
-      initAudio();
+      await initAudio();
       if (!audioCtx) return;
       const t = audioCtx.currentTime;
       const osc = audioCtx.createOscillator();
@@ -1876,10 +1878,10 @@
     }
   }
 
-  function playTVOnSound(){
+  async function playTVOnSound(){
     if (!sfxEnabled) return;
     try {
-      initAudio();
+      await initAudio();
       if (!audioCtx) return;
       const t = audioCtx.currentTime;
       // clic de mise sous tension
@@ -2378,6 +2380,8 @@
   const adminByPlayerList = document.getElementById('adminByPlayerList');
   let leaderboardViewMode = 'level';
   const closeLeaderboardBtn = document.getElementById('closeLeaderboardBtn');
+  const migrateScoresBtn = document.getElementById('migrateScoresBtn');
+  const migrateScoresMsg = document.getElementById('migrateScoresMsg');
   const profilePanel = document.getElementById('profilePanel');
   const profileStatsList = document.getElementById('profileStatsList');
   const closeProfileBtn = document.getElementById('closeProfileBtn');
@@ -3576,6 +3580,63 @@
     leaderboardPanel.classList.add('hidden');
   });
 
+  migrateScoresBtn.addEventListener('click', async () => {
+    if (!firebaseReady){
+      migrateScoresMsg.textContent = "Firebase n'est pas connecté.";
+      migrateScoresMsg.className = 'editor-form-msg';
+      return;
+    }
+    migrateScoresBtn.disabled = true;
+    migrateScoresMsg.textContent = 'Migration en cours, ne quitte pas cette page...';
+    migrateScoresMsg.className = 'editor-form-msg';
+    try {
+      const snapshot = await db.collection('scores').get();
+      if (snapshot.empty){
+        migrateScoresMsg.textContent = "Aucune ancienne donnée trouvée dans « scores ». Rien à migrer.";
+        migrateScoresMsg.className = 'editor-form-msg';
+        migrateScoresBtn.disabled = false;
+        return;
+      }
+      let count = 0;
+      for (const doc of snapshot.docs){
+        const d = doc.data();
+        if (!d || !d.name || !d.level) continue;
+        const playerId = normalize(d.name);
+        const levelId = normalize(d.level);
+        if (!playerId || !levelId) continue;
+
+        const playerRef = db.collection('players').doc(playerId);
+        await playerRef.set({ name: d.name }, { merge: true });
+
+        const payload = {
+          name: d.name,
+          level: d.level,
+          bestScore: d.bestScore,
+          bestTotal: d.bestTotal,
+          gamesPlayed: d.gamesPlayed || 1,
+          lastScore: d.lastScore != null ? d.lastScore : d.bestScore,
+          lastTotal: d.lastTotal != null ? d.lastTotal : d.bestTotal,
+          lastDate: d.lastDate || new Date().toISOString()
+        };
+        if (d.bestTime != null) payload.bestTime = d.bestTime;
+        if (d.lastTime != null) payload.lastTime = d.lastTime;
+
+        await playerRef.collection('levels').doc(levelId).set(payload, { merge: true });
+        count++;
+      }
+
+      migrateScoresMsg.textContent = `${count} ancien${count > 1 ? 's' : ''} score${count > 1 ? 's' : ''} migré${count > 1 ? 's' : ''} avec succès ! Tu peux vérifier dans la collection « players » sur Firebase.`;
+      migrateScoresMsg.className = 'editor-form-msg ok';
+
+      await loadLeaderboardFromCloud();
+      if (leaderboardViewMode === 'player') renderAdminByPlayer(); else renderAdminLeaderboard();
+    } catch (err){
+      migrateScoresMsg.textContent = "Échec de la migration — vérifie que tes règles Firestore autorisent bien la collection « players » (voir le message précédent à ce sujet).";
+      migrateScoresMsg.className = 'editor-form-msg';
+    }
+    migrateScoresBtn.disabled = false;
+  });
+
   lbExportBtn.addEventListener('click', () => {
     if (leaderboard.length === 0) return;
     const blob = new Blob([JSON.stringify(leaderboard, null, 2)], { type: 'application/json' });
@@ -3637,7 +3698,6 @@
     if (sfxEnabled){
       sfxToggle.textContent = '🔊 SONS';
       sfxToggle.classList.add('playing');
-      initAudio(); // relance le contexte audio si besoin, pour un retour de son immédiat
       playSelectSound();
     } else {
       sfxToggle.textContent = '🔇 SONS';
@@ -3687,11 +3747,11 @@
 
   function initAudio(){
     if (audioCtx){
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-      return;
+      if (audioCtx.state === 'suspended') return audioCtx.resume().catch(() => {});
+      return Promise.resolve();
     }
     const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return;
+    if (!AC) return Promise.resolve();
     audioCtx = new AC();
     // Bus effets sonores : volume fixe, jamais coupé par le bouton musique.
     masterGain = audioCtx.createGain();
@@ -3701,6 +3761,8 @@
     musicGain = audioCtx.createGain();
     musicGain.gain.value = 0;
     musicGain.connect(audioCtx.destination);
+    if (audioCtx.state === 'suspended') return audioCtx.resume().catch(() => {});
+    return Promise.resolve();
   }
 
   function playTone(freq, time, duration, type, gainValue, bus){
@@ -3734,10 +3796,9 @@
     musicTimer = setTimeout(scheduleMusicLoop, loopDuration * 1000);
   }
 
-  function startMusic(){
-    initAudio();
+  async function startMusic(){
+    await initAudio();
     if (!audioCtx) return;
-    if (audioCtx.state === 'suspended') audioCtx.resume();
     musicEnabled = true;
     const now = audioCtx.currentTime;
     musicGain.gain.cancelScheduledValues(now);
@@ -3986,16 +4047,16 @@
         await startCustomMusic();
         musicEnabled = true;
       } else {
-        startMusic();
+        await startMusic();
       }
       musicToggle.textContent = '🔊 MUSIQUE';
       musicToggle.classList.add('playing');
     }
   });
 
-  function playCorrectSound(){
+  async function playCorrectSound(){
     if (!sfxEnabled) return;
-    initAudio();
+    await initAudio();
     if (!audioCtx) return;
     const t = audioCtx.currentTime;
     playTone(523.25, t, 0.1, 'square', 0.1);
@@ -4003,18 +4064,18 @@
     playTone(783.99, t + 0.2, 0.16, 'square', 0.1);
   }
 
-  function playWrongSound(){
+  async function playWrongSound(){
     if (!sfxEnabled) return;
-    initAudio();
+    await initAudio();
     if (!audioCtx) return;
     const t = audioCtx.currentTime;
     playTone(196.00, t, 0.18, 'square', 0.1);
     playTone(146.83, t + 0.14, 0.24, 'square', 0.1);
   }
 
-  function playSelectSound(){
+  async function playSelectSound(){
     if (!sfxEnabled) return;
-    initAudio();
+    await initAudio();
     if (!audioCtx) return;
     const t = audioCtx.currentTime;
     playTone(440.00, t, 0.07, 'square', 0.09);
