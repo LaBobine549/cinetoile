@@ -428,18 +428,18 @@
     font-family: 'VT323', monospace;
     font-size: 1.6rem;
     letter-spacing: .01em;
-    background: #0e0620;
+    background: #1c1038;
     color: var(--cyan);
     border: 3px solid #05010c;
-    border-radius: var(--radius);
+    border-radius: 0;
     padding: 18px 16px;
     cursor: pointer;
-    box-shadow: 0 7px 0 0 var(--purple), 0 7px 0 3px #05010c, inset 0 1px 0 rgba(255,255,255,.15);
+    box-shadow: 0 13px 0 0 var(--purple), 0 13px 0 3px #05010c, 0 20px 28px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.18);
     transition: transform .12s cubic-bezier(.34,1.56,.64,1), box-shadow .12s ease;
     clip-path: polygon(0 0, 100% 0, 100% 78%, 95% 100%, 0 100%);
   }
-  .mode-select-btn:hover{ transform: translateY(-2px); box-shadow: 0 9px 0 0 var(--purple), 0 9px 0 3px #05010c, inset 0 1px 0 rgba(255,255,255,.2); }
-  .mode-select-btn:active{ transform: translateY(7px); box-shadow: 0 0 0 0 var(--purple), 0 0 0 3px #05010c, inset 0 1px 0 rgba(255,255,255,.1); }
+  .mode-select-btn:hover{ transform: translateY(-2px); box-shadow: 0 15px 0 0 var(--purple), 0 15px 0 3px #05010c, 0 22px 30px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.22); }
+  .mode-select-btn:active{ transform: translateY(12px); box-shadow: 0 1px 0 0 var(--purple), 0 1px 0 3px #05010c, inset 0 1px 0 rgba(255,255,255,.1); }
   .mode-select-btn:focus-visible{ outline: 2px solid var(--yellow); outline-offset: 2px; }
 
   .mode-icon{
@@ -461,6 +461,23 @@
     0%, 100%{ transform: rotate(0deg); }
     25%{ transform: rotate(-16deg); }
     50%{ transform: rotate(0deg); }
+  }
+
+  #chooseRushBtn:hover .mode-text{
+    animation: rush-title-tremble 1.8s ease-in infinite;
+  }
+  @keyframes rush-title-tremble{
+    0%{ transform: translate(0,0); }
+    10%{ transform: translate(-1px,0); }
+    20%{ transform: translate(1px,0); }
+    30%{ transform: translate(-1px,1px); }
+    40%{ transform: translate(2px,-1px); }
+    50%{ transform: translate(-2px,1px); }
+    60%{ transform: translate(2px,-2px); }
+    70%{ transform: translate(-3px,2px); }
+    80%{ transform: translate(3px,-2px); }
+    90%{ transform: translate(-4px,3px); }
+    100%{ transform: translate(4px,-3px); }
   }
 
   .mode-text{
@@ -490,7 +507,8 @@
   @media (prefers-reduced-motion: reduce){
     .mode-select-btn:hover .icon-clock,
     .mode-select-btn:hover .icon-clap,
-    .mode-select-btn:hover .mode-text.typewriter{ animation: none !important; }
+    .mode-select-btn:hover .mode-text.typewriter,
+    #chooseRushBtn:hover .mode-text{ animation: none !important; }
   }
 
   .back-btn{
@@ -507,13 +525,13 @@
     font-family: 'VT323', monospace;
     font-size: 1.4rem;
     letter-spacing: .01em;
-    background: #0e0620;
+    background: #1c1038;
     color: var(--cyan);
     border: 3px solid #05010c;
-    border-radius: var(--radius);
+    border-radius: 0;
     padding: 14px 16px;
     cursor: pointer;
-    box-shadow: 0 5px 0 0 var(--purple), 0 5px 0 3px #05010c;
+    box-shadow: 0 11px 0 0 var(--purple), 0 11px 0 3px #05010c, 0 16px 24px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.15);
     transition: transform .12s cubic-bezier(.34,1.56,.64,1), box-shadow .12s ease;
     position: relative;
     overflow: visible;
@@ -522,8 +540,8 @@
     gap: 10px;
     clip-path: polygon(0 0, 100% 0, 100% 84%, 96% 100%, 0 100%);
   }
-  .level-btn:hover{ transform: translateY(-2px); box-shadow: 0 7px 0 0 var(--purple), 0 7px 0 3px #05010c; }
-  .level-btn:active{ transform: translateY(5px); box-shadow: 0 0 0 0 var(--purple), 0 0 0 3px #05010c; }
+  .level-btn:hover{ transform: translateY(-2px); box-shadow: 0 13px 0 0 var(--purple), 0 13px 0 3px #05010c, 0 18px 26px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.2); }
+  .level-btn:active{ transform: translateY(10px); box-shadow: 0 1px 0 0 var(--purple), 0 1px 0 3px #05010c, inset 0 1px 0 rgba(255,255,255,.1); }
   .level-btn:focus-visible{ outline: 2px solid var(--yellow); outline-offset: 2px; }
   .level-thumb{
     width: 34px;
@@ -1493,7 +1511,7 @@
         <button class="ghost-btn" id="editorToggle">✎ GERER</button>
         <button class="ghost-btn" id="musicToggle">🔇 MUSIQUE</button>
         <button class="ghost-btn playing" id="sfxToggle">🔊 SONS</button>
-        <button class="ghost-btn" id="viewLeaderboardBtn">🏆 VOIR LE CLASSEMENT</button>
+        <button class="ghost-btn" id="viewLeaderboardBtn">🏆 CLASSEMENT</button>
         <button class="ghost-btn" id="myStatsBtn">👤 PROFIL</button>
         <button class="ghost-btn" id="rulesToggleBtn">📜 REGLES</button>
       </div>
@@ -1513,7 +1531,7 @@
     </div>
   </div>
 
-  <div class="rules-screen" id="rulesScreen">
+  <div class="rules-screen hidden" id="rulesScreen">
     <div class="ticket start-ticket">
       <div class="ticket-label"><span class="slash-heading"><span>REGLES DU JEU</span></span></div>
       <p class="rules-text">
@@ -1598,6 +1616,7 @@
     <p class="hint">Tes statistiques, niveau par niveau.</p>
     <div id="profileStatsList"></div>
     <div class="editor-actions">
+      <button type="button" class="ghost-btn" id="profileViewRankingBtn">🏆 CLASSEMENT</button>
       <button type="button" class="ghost-btn" id="closeProfileBtn">FERMER</button>
     </div>
   </section>
@@ -2238,6 +2257,8 @@
     modeSelectView.classList.remove('hidden');
     classicModePanel.classList.add('hidden');
     rushModePanel.classList.add('hidden');
+    rulesScreen.classList.add('hidden');
+    pendingRulesThenClassic = false;
     levelScreenHint.textContent = 'Sélectionne un mode de jeu.';
     resetTheme();
 
@@ -2253,13 +2274,16 @@
     }, 600);
   }
 
+  let pendingRulesThenClassic = false;
+
   chooseClassicBtn.addEventListener('click', () => {
     playSelectSound();
     playLevelAnimation(chooseClassicBtn, 'pulse');
     setTimeout(() => {
       modeSelectView.classList.add('hidden');
-      classicModePanel.classList.remove('hidden');
-      levelScreenHint.textContent = 'Choisis ton niveau de difficulté.';
+      pendingRulesThenClassic = true;
+      rulesScreen.classList.remove('hidden');
+      rulesScreen.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 220);
   });
 
@@ -2317,6 +2341,7 @@
   const profilePanel = document.getElementById('profilePanel');
   const profileStatsList = document.getElementById('profileStatsList');
   const closeProfileBtn = document.getElementById('closeProfileBtn');
+  const profileViewRankingBtn = document.getElementById('profileViewRankingBtn');
   const levelSelect = document.getElementById('levelSelect');
   const newLevelBtn = document.getElementById('newLevelBtn');
   const levelManageList = document.getElementById('levelManageList');
@@ -2806,6 +2831,11 @@
 
   closeRulesBtn.addEventListener('click', () => {
     rulesScreen.classList.add('hidden');
+    if (pendingRulesThenClassic){
+      pendingRulesThenClassic = false;
+      classicModePanel.classList.remove('hidden');
+      levelScreenHint.textContent = 'Choisis ton niveau de difficulté.';
+    }
   });
 
   function levelSeenKey(levelName){
@@ -2928,7 +2958,7 @@
       if (newCount > 0){
         const newBadge = document.createElement('span');
         newBadge.className = 'new-badge';
-        newBadge.textContent = `🆕 +${newCount} NOUVELLE${newCount > 1 ? 'S' : ''}`;
+        newBadge.textContent = `+${newCount} NOUVELLE${newCount > 1 ? 'S' : ''}`;
         btn.appendChild(newBadge);
       }
 
@@ -3481,6 +3511,21 @@
 
   closeProfileBtn.addEventListener('click', () => {
     profilePanel.classList.add('hidden');
+  });
+
+  profileViewRankingBtn.addEventListener('click', async () => {
+    profilePanel.classList.add('hidden');
+    leaderboardShowMine = true;
+    setLeaderboardViewMode('level');
+    const myLevels = leaderboard.filter(e => normalize(e.name) === normalize(playerName || ''));
+    const preferredLevel = currentLevel || (myLevels[0] && myLevels[0].level);
+    populateLeaderboardLevelSelect(preferredLevel);
+    renderAdminLeaderboard();
+    leaderboardPanel.classList.remove('hidden');
+    leaderboardPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    await loadLeaderboardFromCloud();
+    populateLeaderboardLevelSelect(preferredLevel);
+    renderAdminLeaderboard();
   });
 
   closeLeaderboardBtn.addEventListener('click', () => {
