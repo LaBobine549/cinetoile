@@ -40,19 +40,11 @@
       repeating-linear-gradient(90deg, rgba(var(--cyan-rgb),.05) 0 1px, transparent 1px 42px),
       radial-gradient(ellipse at 50% 0%, #23103f 0%, var(--bg) 55%, var(--bg-deep) 100%);
     background-attachment: fixed;
-    animation: bg-drift 30s linear infinite;
     color: var(--text);
     font-family: 'VT323', monospace;
     font-size: 1.2rem;
   }
 
-  @keyframes bg-drift{
-    0%{ background-position: 0 0, 0 0, 0 0; }
-    100%{ background-position: 0 420px, 420px 0, 0 0; }
-  }
-  @media (prefers-reduced-motion: reduce){
-    html,body{ animation: none; }
-  }
 
   body{
     display:flex;
