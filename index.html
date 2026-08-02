@@ -3477,7 +3477,7 @@
     leaderboardPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     await loadLeaderboardFromCloud();
     populateLeaderboardLevelSelect(currentLevel);
-    renderAdminLeaderboard();
+    if (leaderboardViewMode === 'player') renderAdminByPlayer(); else renderAdminLeaderboard();
   });
 
   function renderPlayerProfile(){
@@ -3534,7 +3534,7 @@
     leaderboardPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     await loadLeaderboardFromCloud();
     populateLeaderboardLevelSelect(preferredLevel);
-    renderAdminLeaderboard();
+    if (leaderboardViewMode === 'player') renderAdminByPlayer(); else renderAdminLeaderboard();
   });
 
   closeLeaderboardBtn.addEventListener('click', () => {
