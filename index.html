@@ -1975,6 +1975,7 @@
   let attemptsLeft = 5;
   let currentGuesses = [];
   let currentMaxAttempts = 5;
+  let questionAttemptsUsed = {};
   const history = [];
 
   function getLevelLives(levelName){
@@ -2746,6 +2747,14 @@
       if (h) history[i] = h;
     });
 
+    questionAttemptsUsed = {};
+    if (session.attemptsUsedByKey){
+      QUESTIONS.forEach((q, i) => {
+        const used = session.attemptsUsedByKey[questionKey(q)];
+        if (used) questionAttemptsUsed[i] = used;
+      });
+    }
+
     score = session.score || 0;
     current = Math.min(session.current || 0, Math.max(0, QUESTIONS.length - 1));
     rushTotalTime = session.rushTotalTime || 0;
@@ -2865,6 +2874,10 @@
       history.forEach((h, i) => {
         if (h && QUESTIONS[i]) historyByKey[questionKey(QUESTIONS[i])] = h;
       });
+      const attemptsUsedByKey = {};
+      Object.keys(questionAttemptsUsed).forEach(idx => {
+        if (QUESTIONS[idx]) attemptsUsedByKey[questionKey(QUESTIONS[idx])] = questionAttemptsUsed[idx];
+      });
       localStorage.setItem(sessionKey(playerName), JSON.stringify({
         level: currentLevel,
         orderedKeys,
@@ -2872,6 +2885,7 @@
         current,
         score,
         historyByKey,
+        attemptsUsedByKey,
         rushTotalTime,
         savedAt: Date.now()
       }));
@@ -3951,7 +3965,8 @@
       rushGaugeRow.classList.add('hidden');
       livesRow.classList.remove('hidden');
       currentMaxAttempts = getLevelLives(currentLevel);
-      attemptsLeft = currentMaxAttempts;
+      const alreadyUsed = questionAttemptsUsed[realIndex] || 0;
+      attemptsLeft = Math.max(0, currentMaxAttempts - alreadyUsed);
       updateHearts();
     }
 
@@ -4097,6 +4112,7 @@
       nextBtn.style.display = 'none';
     } else {
       attemptsLeft = Math.max(0, attemptsLeft - 1);
+      questionAttemptsUsed[realIndex] = currentMaxAttempts - attemptsLeft;
       updateHearts();
       showCommonPointsHint(guess, q.answer, currentGuesses.length, q.year);
       playWrongSound();
@@ -4219,6 +4235,7 @@
     history.length = 0;
     playOrder = QUESTIONS.map((_, i) => i);
     skipStack = [];
+    questionAttemptsUsed = {};
     resultCard.classList.add('hidden');
     quizCard.classList.remove('hidden');
     initFilmstrip();
