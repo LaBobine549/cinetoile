@@ -2,8 +2,19 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Cinétoile — Devinez le film</title>
+
+<!-- ---------- Application installable (PWA) : Android + iPhone ---------- -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b0316">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cinétoile">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Anton&family=Orbitron:wght@700;900&family=Rajdhani:wght@700&display=swap" rel="stylesheet">
 <style>
@@ -4611,6 +4622,15 @@
   }
 
   initApp();
+
+  // Enregistrement du service worker (application installable) : échoue
+  // silencieusement si le navigateur ne le supporte pas ou si le fichier
+  // sw.js n'est pas trouvé, sans jamais bloquer le reste du jeu.
+  if ('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
 </script>
 </body>
 </html>
