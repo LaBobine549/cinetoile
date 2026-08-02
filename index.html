@@ -2599,8 +2599,10 @@
       });
       renderLeaderboard(highlight, filterLevel);
     } catch (err){
-      // Pas de connexion, config pas encore prête, ou index de la requête pas encore activé
-      // (Firestore propose un lien pour l'activer en un clic la première fois que ça arrive).
+      // Pas de connexion, config pas encore prête, ou index de la requête pas encore activé.
+      // On l'affiche quand même en console (au lieu de la cacher) : si c'est un souci d'index,
+      // Firestore fournit ici un lien cliquable pour le créer en un clic.
+      console.error('Erreur lors du chargement du classement (voir ci-dessus pour un éventuel lien de création d\'index Firestore) :', err);
     }
   }
 
