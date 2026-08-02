@@ -2578,7 +2578,11 @@
   }
 
   async function loadLeaderboardFromCloud(highlight, filterLevel){
-    if (!firebaseReady) return;
+    if (!firebaseReady){
+      migrateScoresMsg.textContent = 'Diagnostic : Firebase pas prêt (firebaseReady = false).';
+      migrateScoresMsg.className = 'editor-form-msg';
+      return;
+    }
     try {
       const snapshot = await db.collectionGroup('levels').get();
       leaderboard.length = 0;
@@ -2597,11 +2601,15 @@
           lastTime: d.lastTime != null ? d.lastTime : null
         });
       });
+      migrateScoresMsg.textContent = `Diagnostic : ${leaderboard.length} fiche(s) chargée(s) depuis Firebase.`;
+      migrateScoresMsg.className = 'editor-form-msg ok';
       renderLeaderboard(highlight, filterLevel);
     } catch (err){
       // Pas de connexion, config pas encore prête, ou index de la requête pas encore activé.
       // On l'affiche quand même en console (au lieu de la cacher) : si c'est un souci d'index,
       // Firestore fournit ici un lien cliquable pour le créer en un clic.
+      migrateScoresMsg.textContent = 'Diagnostic : ERREUR au chargement — ' + (err && err.message ? err.message : String(err));
+      migrateScoresMsg.className = 'editor-form-msg';
       console.error('Erreur lors du chargement du classement (voir ci-dessus pour un éventuel lien de création d\'index Firestore) :', err);
     }
   }
