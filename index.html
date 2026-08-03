@@ -46,10 +46,12 @@
   html,body{
     margin:0;
     min-height:100%;
+    min-height:100dvh;
     background:
       repeating-linear-gradient(0deg, rgba(var(--purple-rgb),.07) 0 1px, transparent 1px 42px),
       repeating-linear-gradient(90deg, rgba(var(--cyan-rgb),.05) 0 1px, transparent 1px 42px),
       radial-gradient(ellipse at 50% 0%, #23103f 0%, var(--bg) 55%, var(--bg-deep) 100%);
+    background-color: var(--bg-deep);
     background-attachment: fixed;
     color: var(--text);
     font-family: 'VT323', monospace;
@@ -61,7 +63,7 @@
     display:flex;
     flex-direction:column;
     align-items:center;
-    padding: 32px 16px 64px;
+    padding: 32px 16px calc(64px + env(safe-area-inset-bottom));
     position: relative;
     overflow-x: hidden;
     width: 100%;
