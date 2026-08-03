@@ -1594,6 +1594,7 @@
     <div id="profileStatsList" class="hidden"></div>
     <div class="editor-actions">
       <button type="button" class="ghost-btn hidden" id="migrateScoresBtn">⭱ MIGRER LES ANCIENS SCORES</button>
+      <button type="button" class="ghost-btn hidden" id="resetLeaderboardBtn">↺ RÉINITIALISER LE CLASSEMENT</button>
       <button type="button" class="ghost-btn" id="closeLeaderboardBtn">FERMER</button>
     </div>
     <div class="editor-form-msg" id="migrateScoresMsg"></div>
@@ -2350,6 +2351,7 @@
   let leaderboardViewMode = 'level';
   const closeLeaderboardBtn = document.getElementById('closeLeaderboardBtn');
   const migrateScoresBtn = document.getElementById('migrateScoresBtn');
+  const resetLeaderboardBtn = document.getElementById('resetLeaderboardBtn');
   const migrateScoresMsg = document.getElementById('migrateScoresMsg');
   const levelSelect = document.getElementById('levelSelect');
   const newLevelBtn = document.getElementById('newLevelBtn');
@@ -3664,6 +3666,46 @@
     migrateScoresBtn.disabled = false;
   });
 
+  resetLeaderboardBtn.addEventListener('click', async () => {
+    if (!firebaseReady){
+      migrateScoresMsg.textContent = "Firebase n'est pas connecté.";
+      migrateScoresMsg.className = 'editor-form-msg';
+      return;
+    }
+    const confirmed = window.confirm(
+      "Ça va supprimer DÉFINITIVEMENT les scores et statistiques de TOUS les joueurs, sur tous les niveaux. " +
+      "Cette action est irréversible. Continuer ?"
+    );
+    if (!confirmed) return;
+
+    resetLeaderboardBtn.disabled = true;
+    migrateScoresMsg.textContent = 'Réinitialisation en cours, ne quitte pas cette page...';
+    migrateScoresMsg.className = 'editor-form-msg';
+    try {
+      const levelsSnapshot = await db.collectionGroup('levels').get();
+      let count = 0;
+      for (const doc of levelsSnapshot.docs){
+        await doc.ref.delete();
+        count++;
+      }
+
+      const playersSnapshot = await db.collection('players').get();
+      for (const doc of playersSnapshot.docs){
+        await doc.ref.delete();
+      }
+
+      leaderboard.length = 0;
+      setLeaderboardViewMode(leaderboardViewMode);
+
+      migrateScoresMsg.textContent = `Classement réinitialisé : ${count} fiche(s) supprimée(s). Tout repart à zéro.`;
+      migrateScoresMsg.className = 'editor-form-msg ok';
+    } catch (err){
+      migrateScoresMsg.textContent = 'Échec de la réinitialisation — ' + (err && err.message ? err.message : String(err));
+      migrateScoresMsg.className = 'editor-form-msg';
+    }
+    resetLeaderboardBtn.disabled = false;
+  });
+
   lbExportBtn.addEventListener('click', () => {
     if (leaderboard.length === 0) return;
     const blob = new Blob([JSON.stringify(leaderboard, null, 2)], { type: 'application/json' });
@@ -4389,6 +4431,7 @@
       playerName = 'ADMIN';
       editorToggle.style.display = '';
       migrateScoresBtn.classList.remove('hidden');
+      resetLeaderboardBtn.classList.remove('hidden');
       lbAdminRow.classList.remove('hidden');
       adminGate.classList.add('hidden');
       startScreen.classList.add('hidden');
