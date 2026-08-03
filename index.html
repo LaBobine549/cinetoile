@@ -727,6 +727,26 @@
     color: var(--yellow);
   }
 
+  .leaderboard-item.podium-1{
+    font-size: 1.3rem;
+    background: linear-gradient(90deg, rgba(255,215,0,.16), #0e0620 55%);
+    border-color: #ffd700;
+    box-shadow: 0 0 10px rgba(255,215,0,.35);
+  }
+  .leaderboard-item.podium-2{
+    background: linear-gradient(90deg, rgba(192,192,192,.14), #0e0620 55%);
+    border-color: #c0c0c0;
+  }
+  .leaderboard-item.podium-3{
+    background: linear-gradient(90deg, rgba(205,127,50,.14), #0e0620 55%);
+    border-color: #cd7f32;
+  }
+  .leaderboard-item.podium-1.my-entry,
+  .leaderboard-item.podium-2.my-entry,
+  .leaderboard-item.podium-3.my-entry{
+    box-shadow: 0 0 10px rgba(249,240,2,.5);
+  }
+
   .player-group{
     margin-bottom: 16px;
     padding: 10px;
@@ -1554,17 +1574,20 @@
   <section class="editor-panel hidden" id="leaderboardPanel" aria-label="Classement complet">
     <h2>CLASSEMENT</h2>
     <p class="hint">Statistiques de tous les joueurs, mises à jour à chaque partie.</p>
-    <div class="skip-row" style="margin-bottom: 14px;">
+    <div class="skip-row" style="margin-bottom: 14px; flex-wrap: wrap;">
       <button type="button" class="ghost-btn" id="lbViewByLevelBtn">PAR NIVEAU</button>
       <button type="button" class="ghost-btn" id="lbViewByPlayerBtn">PAR JOUEUR</button>
+      <button type="button" class="ghost-btn" id="lbViewGlobalBtn">🏆 GÉNÉRAL</button>
     </div>
     <div class="field" id="leaderboardLevelField">
       <label for="leaderboardLevelSelect">Niveau</label>
       <select id="leaderboardLevelSelect"></select>
     </div>
+    <p class="hint hidden" id="globalRankingHint">Classement général basé sur le total des meilleurs scores obtenus sur tous les niveaux Classique joués (le mode Rush, basé sur le temps, n'est pas comptabilisé ici).</p>
     <p class="stats-line" id="myStatsSummary"></p>
     <div id="adminLeaderboardList"></div>
     <div id="adminByPlayerList" class="hidden"></div>
+    <div id="globalRankingList" class="hidden"></div>
     <div class="editor-actions">
       <button type="button" class="ghost-btn hidden" id="migrateScoresBtn">⭱ MIGRER LES ANCIENS SCORES</button>
       <button type="button" class="ghost-btn" id="closeLeaderboardBtn">FERMER</button>
@@ -2324,7 +2347,10 @@
   const leaderboardLevelField = document.getElementById('leaderboardLevelField');
   const lbViewByLevelBtn = document.getElementById('lbViewByLevelBtn');
   const lbViewByPlayerBtn = document.getElementById('lbViewByPlayerBtn');
+  const lbViewGlobalBtn = document.getElementById('lbViewGlobalBtn');
   const adminByPlayerList = document.getElementById('adminByPlayerList');
+  const globalRankingList = document.getElementById('globalRankingList');
+  const globalRankingHint = document.getElementById('globalRankingHint');
   let leaderboardViewMode = 'level';
   const closeLeaderboardBtn = document.getElementById('closeLeaderboardBtn');
   const migrateScoresBtn = document.getElementById('migrateScoresBtn');
@@ -3312,9 +3338,10 @@
     sorted.forEach((entry, idx) => {
       const row = document.createElement('div');
       row.className = 'leaderboard-item';
+      if (idx < 3) row.classList.add('podium-' + (idx + 1));
       if (isMine(entry)) row.classList.add('my-entry');
       const left = document.createElement('span');
-      left.textContent = `#${idx + 1} ${entry.name}`;
+      left.textContent = `${rankBadge(idx)} ${entry.name}`;
       const right = document.createElement('span');
       right.textContent = (isRush && entry.bestTime != null)
         ? formatTime(entry.bestTime)
@@ -3393,9 +3420,10 @@
     sorted.forEach((entry, idx) => {
       const row = document.createElement('div');
       row.className = 'leaderboard-item';
+      if (idx < 3) row.classList.add('podium-' + (idx + 1));
       if (leaderboardShowMine && entry.key === highlightKey) row.classList.add('my-entry');
       const left = document.createElement('span');
-      left.textContent = `#${idx + 1} ${entry.name}`;
+      left.textContent = `${rankBadge(idx)} ${entry.name}`;
       const right = document.createElement('span');
       right.textContent = (isRush && entry.bestTime != null)
         ? `${formatTime(entry.bestTime)} (${entry.gamesPlayed} partie${entry.gamesPlayed > 1 ? 's' : ''})`
@@ -3454,17 +3482,75 @@
     });
   }
 
+  // Classement général : additionne, pour chaque joueur, ses meilleurs scores sur tous
+  // les niveaux Classique qu'il a joués. Le mode Rush (basé sur le temps, pas le score)
+  // n'est pas comptabilisé dans ce total, mais son nombre de niveaux Rush terminés est
+  // affiché à titre indicatif.
+  function renderGlobalRanking(){
+    globalRankingList.innerHTML = '';
+
+    const byName = {};
+    leaderboard.forEach(entry => {
+      const nameKey = normalize(entry.name);
+      if (!byName[nameKey]) byName[nameKey] = {
+        name: entry.name, totalScore: 0, totalPossible: 0, gamesPlayed: 0,
+        classicLevels: 0, rushLevels: 0
+      };
+      const p = byName[nameKey];
+      p.gamesPlayed += entry.gamesPlayed || 0;
+      if (getLevelMode(entry.level) === 'rush'){
+        p.rushLevels++;
+      } else {
+        p.totalScore += entry.bestScore || 0;
+        p.totalPossible += entry.bestTotal || 0;
+        p.classicLevels++;
+      }
+    });
+
+    const players = Object.values(byName)
+      .filter(p => p.classicLevels > 0)
+      .sort((a, b) => b.totalScore - a.totalScore);
+
+    if (players.length === 0){
+      globalRankingList.innerHTML = '<p class="empty-note">Personne n\'a encore de score en mode Classique.</p>';
+      return;
+    }
+
+    const myKey = normalize(playerName || '');
+
+    players.forEach((p, idx) => {
+      const row = document.createElement('div');
+      row.className = 'leaderboard-item';
+      if (idx < 3) row.classList.add('podium-' + (idx + 1));
+      if (normalize(p.name) === myKey) row.classList.add('my-entry');
+      const left = document.createElement('span');
+      left.textContent = `${rankBadge(idx)} ${p.name}`;
+      const right = document.createElement('span');
+      const rushNote = p.rushLevels > 0 ? ` — ${p.rushLevels} niveau${p.rushLevels > 1 ? 'x' : ''} Rush` : '';
+      right.textContent = `${p.totalScore} / ${p.totalPossible} pts sur ${p.classicLevels} niveau${p.classicLevels > 1 ? 'x' : ''}${rushNote}`;
+      row.appendChild(left);
+      row.appendChild(right);
+      globalRankingList.appendChild(row);
+    });
+  }
+
   function setLeaderboardViewMode(mode){
     leaderboardViewMode = mode;
     const isByPlayer = mode === 'player';
-    leaderboardLevelField.classList.toggle('hidden', isByPlayer);
-    adminLeaderboardList.classList.toggle('hidden', isByPlayer);
+    const isGlobal = mode === 'global';
+    leaderboardLevelField.classList.toggle('hidden', isByPlayer || isGlobal);
+    adminLeaderboardList.classList.toggle('hidden', isByPlayer || isGlobal);
     adminByPlayerList.classList.toggle('hidden', !isByPlayer);
-    myStatsSummary.classList.toggle('hidden', isByPlayer);
-    lbViewByLevelBtn.classList.toggle('playing', !isByPlayer);
+    globalRankingList.classList.toggle('hidden', !isGlobal);
+    globalRankingHint.classList.toggle('hidden', !isGlobal);
+    myStatsSummary.classList.toggle('hidden', isByPlayer || isGlobal);
+    lbViewByLevelBtn.classList.toggle('playing', mode === 'level');
     lbViewByPlayerBtn.classList.toggle('playing', isByPlayer);
+    lbViewGlobalBtn.classList.toggle('playing', isGlobal);
     if (isByPlayer){
       renderAdminByPlayer();
+    } else if (isGlobal){
+      renderGlobalRanking();
     } else {
       renderAdminLeaderboard();
     }
@@ -3472,12 +3558,13 @@
 
   lbViewByLevelBtn.addEventListener('click', () => setLeaderboardViewMode('level'));
   lbViewByPlayerBtn.addEventListener('click', () => setLeaderboardViewMode('player'));
+  lbViewGlobalBtn.addEventListener('click', () => setLeaderboardViewMode('global'));
 
   leaderboardLevelSelect.addEventListener('change', renderAdminLeaderboard);
 
   viewLeaderboardBtn.addEventListener('click', async () => {
     settingsDropdown.classList.add('hidden');
-    leaderboardShowMine = false;
+    leaderboardShowMine = true;
     setLeaderboardViewMode('level');
     populateLeaderboardLevelSelect(currentLevel);
     renderAdminLeaderboard();
@@ -3485,7 +3572,7 @@
     leaderboardPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     await loadLeaderboardFromCloud();
     populateLeaderboardLevelSelect(currentLevel);
-    if (leaderboardViewMode === 'player') renderAdminByPlayer(); else renderAdminLeaderboard();
+    setLeaderboardViewMode(leaderboardViewMode);
   });
 
   function renderPlayerProfile(){
@@ -3542,7 +3629,7 @@
     leaderboardPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     await loadLeaderboardFromCloud();
     populateLeaderboardLevelSelect(preferredLevel);
-    if (leaderboardViewMode === 'player') renderAdminByPlayer(); else renderAdminLeaderboard();
+    setLeaderboardViewMode(leaderboardViewMode);
   });
 
   closeLeaderboardBtn.addEventListener('click', () => {
@@ -3598,7 +3685,7 @@
       migrateScoresMsg.className = 'editor-form-msg ok';
 
       await loadLeaderboardFromCloud();
-      if (leaderboardViewMode === 'player') renderAdminByPlayer(); else renderAdminLeaderboard();
+      setLeaderboardViewMode(leaderboardViewMode);
     } catch (err){
       migrateScoresMsg.textContent = "Échec de la migration — vérifie que tes règles Firestore autorisent bien la collection « players » (voir le message précédent à ce sujet).";
       migrateScoresMsg.className = 'editor-form-msg';
@@ -4176,6 +4263,13 @@
     return mins > 0 ? `${mins}min ${secs}s` : `${secs}s`;
   }
 
+  function rankBadge(idx){
+    if (idx === 0) return '🥇';
+    if (idx === 1) return '🥈';
+    if (idx === 2) return '🥉';
+    return `#${idx + 1}`;
+  }
+
   function showResult(){
     accumulateRushTime(); // comptabilise le dernier segment si la partie s'est terminée sans repasser par renderQuestion
     clearGameSession(playerName); // le niveau est terminé, plus rien à reprendre
@@ -4291,7 +4385,6 @@
   let isAdminUnlocked = false;
 
   editorToggle.style.display = 'none';
-  viewLeaderboardBtn.style.display = 'none';
 
   const isAdmin = new URLSearchParams(window.location.search).get('admin') === '1';
   if (isAdmin){
@@ -4318,7 +4411,6 @@
       isAdminUnlocked = true;
       playerName = 'ADMIN';
       editorToggle.style.display = '';
-      viewLeaderboardBtn.style.display = '';
       migrateScoresBtn.classList.remove('hidden');
       lbAdminRow.classList.remove('hidden');
       adminGate.classList.add('hidden');
