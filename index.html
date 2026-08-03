@@ -3345,7 +3345,7 @@
       const right = document.createElement('span');
       right.textContent = (isRush && entry.bestTime != null)
         ? formatTime(entry.bestTime)
-        : `${entry.bestScore} / ${entry.bestTotal}`;
+        : scorePercentLabel(entry.bestScore, entry.bestTotal);
       row.appendChild(left);
       row.appendChild(right);
       leaderboardList.appendChild(row);
@@ -3357,7 +3357,7 @@
       statsLine.textContent = (isRush && highlight.bestTime != null)
         ? `Meilleur temps : ${formatTime(highlight.bestTime)} — Dernier temps : ${highlight.lastTime != null ? formatTime(highlight.lastTime) : '—'} — ` +
           `${highlight.gamesPlayed} partie${highlight.gamesPlayed > 1 ? 's' : ''} jouée${highlight.gamesPlayed > 1 ? 's' : ''}`
-        : `Meilleur score : ${highlight.bestScore} / ${highlight.bestTotal} — ` +
+        : `Meilleur score : ${scorePercentLabel(highlight.bestScore, highlight.bestTotal)} — ` +
           `Dernier essai : ${highlight.lastScore} / ${highlight.lastTotal} — ` +
           `${highlight.gamesPlayed} partie${highlight.gamesPlayed > 1 ? 's' : ''} jouée${highlight.gamesPlayed > 1 ? 's' : ''}`;
     }
@@ -3403,7 +3403,7 @@
         myStatsSummary.textContent = (isRush && mine.bestTime != null)
           ? `TOI (${mine.name}) : #${rank} sur ${sorted.length} — Meilleur temps : ${formatTime(mine.bestTime)} — ` +
             `${mine.gamesPlayed} partie${mine.gamesPlayed > 1 ? 's' : ''} jouée${mine.gamesPlayed > 1 ? 's' : ''}`
-          : `TOI (${mine.name}) : #${rank} sur ${sorted.length} — Meilleur score : ${mine.bestScore} / ${mine.bestTotal} — ` +
+          : `TOI (${mine.name}) : #${rank} sur ${sorted.length} — Meilleur score : ${scorePercentLabel(mine.bestScore, mine.bestTotal)} — ` +
             `${mine.gamesPlayed} partie${mine.gamesPlayed > 1 ? 's' : ''} jouée${mine.gamesPlayed > 1 ? 's' : ''}`;
       } else {
         myStatsSummary.textContent = "Tu n'as pas encore de partie enregistrée sous ce pseudo, pour ce niveau — joue une partie pour apparaître ici !";
@@ -3427,7 +3427,7 @@
       const right = document.createElement('span');
       right.textContent = (isRush && entry.bestTime != null)
         ? `${formatTime(entry.bestTime)} (${entry.gamesPlayed} partie${entry.gamesPlayed > 1 ? 's' : ''})`
-        : `${entry.bestScore} / ${entry.bestTotal} (${entry.gamesPlayed} partie${entry.gamesPlayed > 1 ? 's' : ''})`;
+        : `${scorePercentLabel(entry.bestScore, entry.bestTotal)} (${entry.gamesPlayed} partie${entry.gamesPlayed > 1 ? 's' : ''})`;
       row.appendChild(left);
       row.appendChild(right);
       adminLeaderboardList.appendChild(row);
@@ -3472,7 +3472,7 @@
           const right = document.createElement('span');
           right.textContent = (isRush && entry.bestTime != null)
             ? `${formatTime(entry.bestTime)} — ${entry.gamesPlayed} partie${entry.gamesPlayed > 1 ? 's' : ''}`
-            : `${entry.bestScore} / ${entry.bestTotal} — ${entry.gamesPlayed} partie${entry.gamesPlayed > 1 ? 's' : ''}`;
+            : `${scorePercentLabel(entry.bestScore, entry.bestTotal)} — ${entry.gamesPlayed} partie${entry.gamesPlayed > 1 ? 's' : ''}`;
           row.appendChild(left);
           row.appendChild(right);
           group.appendChild(row);
@@ -3597,7 +3597,7 @@
         const right = document.createElement('span');
         right.textContent = (isRush && entry.bestTime != null)
           ? `${formatTime(entry.bestTime)} — ${entry.gamesPlayed} partie${entry.gamesPlayed > 1 ? 's' : ''}`
-          : `${entry.bestScore} / ${entry.bestTotal} — ${entry.gamesPlayed} partie${entry.gamesPlayed > 1 ? 's' : ''}`;
+          : `${scorePercentLabel(entry.bestScore, entry.bestTotal)} — ${entry.gamesPlayed} partie${entry.gamesPlayed > 1 ? 's' : ''}`;
         row.appendChild(left);
         row.appendChild(right);
         profileStatsList.appendChild(row);
@@ -4268,6 +4268,12 @@
     if (idx === 1) return '🥈';
     if (idx === 2) return '🥉';
     return `#${idx + 1}`;
+  }
+
+  function scorePercentLabel(score, total){
+    if (!total) return '0%';
+    const pct = Math.round((score / total) * 100);
+    return `${pct}% (${score}/${total})`;
   }
 
   function showResult(){
