@@ -1493,7 +1493,6 @@
         <button class="ghost-btn" id="editorToggle">✎ GERER</button>
         <button class="ghost-btn playing" id="sfxToggle">🔊 SONS</button>
         <button class="ghost-btn" id="viewLeaderboardBtn">🏆 CLASSEMENT</button>
-        <button class="ghost-btn" id="myStatsBtn">👤 PROFIL</button>
         <button class="ghost-btn" id="rulesToggleBtn">📜 REGLES</button>
       </div>
     </div>
@@ -1580,31 +1579,24 @@
       <button type="button" class="ghost-btn" id="lbViewByLevelBtn">PAR NIVEAU</button>
       <button type="button" class="ghost-btn" id="lbViewByPlayerBtn">PAR JOUEUR</button>
       <button type="button" class="ghost-btn" id="lbViewGlobalBtn">🏆 GÉNÉRAL</button>
+      <button type="button" class="ghost-btn" id="lbViewProfileBtn">👤 MON PROFIL</button>
     </div>
     <div class="field" id="leaderboardLevelField">
       <label for="leaderboardLevelSelect">Niveau</label>
       <select id="leaderboardLevelSelect"></select>
     </div>
     <p class="hint hidden" id="globalRankingHint">Classement général basé sur le total des meilleurs scores obtenus sur tous les niveaux Classique joués (le mode Rush, basé sur le temps, n'est pas comptabilisé ici).</p>
+    <p class="hint hidden" id="profileHint">Tes statistiques, niveau par niveau.</p>
     <p class="stats-line" id="myStatsSummary"></p>
     <div id="adminLeaderboardList"></div>
     <div id="adminByPlayerList" class="hidden"></div>
     <div id="globalRankingList" class="hidden"></div>
+    <div id="profileStatsList" class="hidden"></div>
     <div class="editor-actions">
       <button type="button" class="ghost-btn hidden" id="migrateScoresBtn">⭱ MIGRER LES ANCIENS SCORES</button>
       <button type="button" class="ghost-btn" id="closeLeaderboardBtn">FERMER</button>
     </div>
     <div class="editor-form-msg" id="migrateScoresMsg"></div>
-  </section>
-
-  <section class="editor-panel hidden" id="profilePanel" aria-label="Profil du joueur">
-    <h2>👤 PROFIL</h2>
-    <p class="hint">Tes statistiques, niveau par niveau.</p>
-    <div id="profileStatsList"></div>
-    <div class="editor-actions">
-      <button type="button" class="ghost-btn" id="profileViewRankingBtn">🏆 CLASSEMENT</button>
-      <button type="button" class="ghost-btn" id="closeProfileBtn">FERMER</button>
-    </div>
   </section>
 
   <section class="editor-panel editor-panel-wide hidden" id="editorPanel" aria-label="Gestion des critiques personnalisées">
@@ -2341,7 +2333,6 @@
   const rulesToggleBtn = document.getElementById('rulesToggleBtn');
   const closeRulesBtn = document.getElementById('closeRulesBtn');
   const viewLeaderboardBtn = document.getElementById('viewLeaderboardBtn');
-  const myStatsBtn = document.getElementById('myStatsBtn');
   const myStatsSummary = document.getElementById('myStatsSummary');
   const leaderboardPanel = document.getElementById('leaderboardPanel');
   const adminLeaderboardList = document.getElementById('adminLeaderboardList');
@@ -2350,17 +2341,16 @@
   const lbViewByLevelBtn = document.getElementById('lbViewByLevelBtn');
   const lbViewByPlayerBtn = document.getElementById('lbViewByPlayerBtn');
   const lbViewGlobalBtn = document.getElementById('lbViewGlobalBtn');
+  const lbViewProfileBtn = document.getElementById('lbViewProfileBtn');
   const adminByPlayerList = document.getElementById('adminByPlayerList');
   const globalRankingList = document.getElementById('globalRankingList');
   const globalRankingHint = document.getElementById('globalRankingHint');
+  const profileHint = document.getElementById('profileHint');
+  const profileStatsList = document.getElementById('profileStatsList');
   let leaderboardViewMode = 'level';
   const closeLeaderboardBtn = document.getElementById('closeLeaderboardBtn');
   const migrateScoresBtn = document.getElementById('migrateScoresBtn');
   const migrateScoresMsg = document.getElementById('migrateScoresMsg');
-  const profilePanel = document.getElementById('profilePanel');
-  const profileStatsList = document.getElementById('profileStatsList');
-  const closeProfileBtn = document.getElementById('closeProfileBtn');
-  const profileViewRankingBtn = document.getElementById('profileViewRankingBtn');
   const levelSelect = document.getElementById('levelSelect');
   const newLevelBtn = document.getElementById('newLevelBtn');
   const levelManageList = document.getElementById('levelManageList');
@@ -3540,19 +3530,25 @@
     leaderboardViewMode = mode;
     const isByPlayer = mode === 'player';
     const isGlobal = mode === 'global';
-    leaderboardLevelField.classList.toggle('hidden', isByPlayer || isGlobal);
-    adminLeaderboardList.classList.toggle('hidden', isByPlayer || isGlobal);
+    const isProfile = mode === 'profile';
+    leaderboardLevelField.classList.toggle('hidden', isByPlayer || isGlobal || isProfile);
+    adminLeaderboardList.classList.toggle('hidden', isByPlayer || isGlobal || isProfile);
     adminByPlayerList.classList.toggle('hidden', !isByPlayer);
     globalRankingList.classList.toggle('hidden', !isGlobal);
     globalRankingHint.classList.toggle('hidden', !isGlobal);
-    myStatsSummary.classList.toggle('hidden', isByPlayer || isGlobal);
+    profileStatsList.classList.toggle('hidden', !isProfile);
+    profileHint.classList.toggle('hidden', !isProfile);
+    myStatsSummary.classList.toggle('hidden', isByPlayer || isGlobal || isProfile);
     lbViewByLevelBtn.classList.toggle('playing', mode === 'level');
     lbViewByPlayerBtn.classList.toggle('playing', isByPlayer);
     lbViewGlobalBtn.classList.toggle('playing', isGlobal);
+    lbViewProfileBtn.classList.toggle('playing', isProfile);
     if (isByPlayer){
       renderAdminByPlayer();
     } else if (isGlobal){
       renderGlobalRanking();
+    } else if (isProfile){
+      renderPlayerProfile();
     } else {
       renderAdminLeaderboard();
     }
@@ -3561,6 +3557,7 @@
   lbViewByLevelBtn.addEventListener('click', () => setLeaderboardViewMode('level'));
   lbViewByPlayerBtn.addEventListener('click', () => setLeaderboardViewMode('player'));
   lbViewGlobalBtn.addEventListener('click', () => setLeaderboardViewMode('global'));
+  lbViewProfileBtn.addEventListener('click', () => setLeaderboardViewMode('profile'));
 
   leaderboardLevelSelect.addEventListener('change', renderAdminLeaderboard);
 
@@ -3605,34 +3602,6 @@
         profileStatsList.appendChild(row);
       });
   }
-
-  myStatsBtn.addEventListener('click', async () => {
-    settingsDropdown.classList.add('hidden');
-    renderPlayerProfile();
-    profilePanel.classList.remove('hidden');
-    profilePanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    await loadLeaderboardFromCloud();
-    renderPlayerProfile();
-  });
-
-  closeProfileBtn.addEventListener('click', () => {
-    profilePanel.classList.add('hidden');
-  });
-
-  profileViewRankingBtn.addEventListener('click', async () => {
-    profilePanel.classList.add('hidden');
-    leaderboardShowMine = true;
-    setLeaderboardViewMode('level');
-    const myLevels = leaderboard.filter(e => normalize(e.name) === normalize(playerName || ''));
-    const preferredLevel = currentLevel || (myLevels[0] && myLevels[0].level);
-    populateLeaderboardLevelSelect(preferredLevel);
-    renderAdminLeaderboard();
-    leaderboardPanel.classList.remove('hidden');
-    leaderboardPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    await loadLeaderboardFromCloud();
-    populateLeaderboardLevelSelect(preferredLevel);
-    setLeaderboardViewMode(leaderboardViewMode);
-  });
 
   closeLeaderboardBtn.addEventListener('click', () => {
     leaderboardPanel.classList.add('hidden');
