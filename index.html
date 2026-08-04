@@ -1560,7 +1560,7 @@
       <div class="settings-dropdown hidden" id="settingsDropdown">
         <button class="ghost-btn" id="editorToggle">✎ GERER</button>
         <button class="ghost-btn playing" id="sfxToggle">🔊 SONS</button>
-        <button class="ghost-btn" id="viewLeaderboardBtn">🏆 CLASSEMENT</button>
+        <button class="ghost-btn" id="viewLeaderboardBtn">👤 PROFIL</button>
         <button class="ghost-btn" id="rulesToggleBtn">📜 REGLES</button>
       </div>
     </div>
@@ -1645,7 +1645,6 @@
     <p class="hint">Statistiques de tous les joueurs, mises à jour à chaque partie.</p>
     <div class="skip-row" style="margin-bottom: 14px; flex-wrap: wrap;">
       <button type="button" class="ghost-btn" id="lbViewByLevelBtn">PAR NIVEAU</button>
-      <button type="button" class="ghost-btn" id="lbViewByPlayerBtn">PAR JOUEUR</button>
       <button type="button" class="ghost-btn" id="lbViewGlobalBtn">🏆 GENERAL</button>
       <button type="button" class="ghost-btn" id="lbViewProfileBtn">👤 MON PROFIL</button>
     </div>
@@ -1657,7 +1656,6 @@
     <p class="hint hidden" id="profileHint">Tes statistiques, niveau par niveau.</p>
     <p class="stats-line" id="myStatsSummary"></p>
     <div id="adminLeaderboardList"></div>
-    <div id="adminByPlayerList" class="hidden"></div>
     <div id="globalRankingList" class="hidden"></div>
     <div id="profileStatsList" class="hidden"></div>
     <div class="editor-actions">
@@ -2519,10 +2517,8 @@
   const leaderboardLevelSelect = document.getElementById('leaderboardLevelSelect');
   const leaderboardLevelField = document.getElementById('leaderboardLevelField');
   const lbViewByLevelBtn = document.getElementById('lbViewByLevelBtn');
-  const lbViewByPlayerBtn = document.getElementById('lbViewByPlayerBtn');
   const lbViewGlobalBtn = document.getElementById('lbViewGlobalBtn');
   const lbViewProfileBtn = document.getElementById('lbViewProfileBtn');
-  const adminByPlayerList = document.getElementById('adminByPlayerList');
   const globalRankingList = document.getElementById('globalRankingList');
   const globalRankingHint = document.getElementById('globalRankingHint');
   const profileHint = document.getElementById('profileHint');
@@ -3625,54 +3621,6 @@
     });
   }
 
-  function renderAdminByPlayer(){
-    adminByPlayerList.innerHTML = '';
-
-    const byName = {};
-    leaderboard.forEach(entry => {
-      const nameKey = normalize(entry.name);
-      if (!byName[nameKey]) byName[nameKey] = { name: entry.name, levels: [] };
-      byName[nameKey].levels.push(entry);
-    });
-
-    const players = Object.values(byName).sort((a, b) => a.name.localeCompare(b.name));
-
-    if (players.length === 0){
-      adminByPlayerList.innerHTML = '<p class="empty-note">Personne n\'a encore joué.</p>';
-      return;
-    }
-
-    players.forEach(player => {
-      const group = document.createElement('div');
-      group.className = 'player-group';
-
-      const title = document.createElement('p');
-      title.className = 'player-group-name';
-      title.textContent = `👤 ${player.name}`;
-      group.appendChild(title);
-
-      player.levels
-        .slice()
-        .sort((a, b) => a.level.localeCompare(b.level))
-        .forEach(entry => {
-          const isRush = getLevelMode(entry.level) === 'rush';
-          const row = document.createElement('div');
-          row.className = 'leaderboard-item';
-          const left = document.createElement('span');
-          left.textContent = entry.level;
-          const right = document.createElement('span');
-          right.textContent = (isRush && entry.bestTime != null)
-            ? `${formatTime(entry.bestTime)} — ${entry.gamesPlayed} partie${entry.gamesPlayed > 1 ? 's' : ''}`
-            : `${scorePercentLabel(entry.bestScore, entry.bestTotal)} — ${entry.gamesPlayed} partie${entry.gamesPlayed > 1 ? 's' : ''}`;
-          row.appendChild(left);
-          row.appendChild(right);
-          group.appendChild(row);
-        });
-
-      adminByPlayerList.appendChild(group);
-    });
-  }
-
   // Classement général : additionne, pour chaque joueur, ses meilleurs scores sur tous
   // les niveaux Classique qu'il a joués. Le mode Rush (basé sur le temps, pas le score)
   // n'est pas comptabilisé dans ce total, mais son nombre de niveaux Rush terminés est
@@ -3727,24 +3675,19 @@
 
   function setLeaderboardViewMode(mode){
     leaderboardViewMode = mode;
-    const isByPlayer = mode === 'player';
     const isGlobal = mode === 'global';
     const isProfile = mode === 'profile';
-    leaderboardLevelField.classList.toggle('hidden', isByPlayer || isGlobal || isProfile);
-    adminLeaderboardList.classList.toggle('hidden', isByPlayer || isGlobal || isProfile);
-    adminByPlayerList.classList.toggle('hidden', !isByPlayer);
+    leaderboardLevelField.classList.toggle('hidden', isGlobal || isProfile);
+    adminLeaderboardList.classList.toggle('hidden', isGlobal || isProfile);
     globalRankingList.classList.toggle('hidden', !isGlobal);
     globalRankingHint.classList.toggle('hidden', !isGlobal);
     profileStatsList.classList.toggle('hidden', !isProfile);
     profileHint.classList.toggle('hidden', !isProfile);
-    myStatsSummary.classList.toggle('hidden', isByPlayer || isGlobal || isProfile);
+    myStatsSummary.classList.toggle('hidden', isGlobal || isProfile);
     lbViewByLevelBtn.classList.toggle('playing', mode === 'level');
-    lbViewByPlayerBtn.classList.toggle('playing', isByPlayer);
     lbViewGlobalBtn.classList.toggle('playing', isGlobal);
     lbViewProfileBtn.classList.toggle('playing', isProfile);
-    if (isByPlayer){
-      renderAdminByPlayer();
-    } else if (isGlobal){
+    if (isGlobal){
       renderGlobalRanking();
     } else if (isProfile){
       renderPlayerProfile();
@@ -3754,7 +3697,6 @@
   }
 
   lbViewByLevelBtn.addEventListener('click', () => setLeaderboardViewMode('level'));
-  lbViewByPlayerBtn.addEventListener('click', () => setLeaderboardViewMode('player'));
   lbViewGlobalBtn.addEventListener('click', () => setLeaderboardViewMode('global'));
   lbViewProfileBtn.addEventListener('click', () => setLeaderboardViewMode('profile'));
 
