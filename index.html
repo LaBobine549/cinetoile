@@ -3766,8 +3766,7 @@
     setLeaderboardViewMode('level');
     populateLeaderboardLevelSelect(currentLevel);
     renderAdminLeaderboard();
-    leaderboardPanel.classList.remove('hidden');
-    leaderboardPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    openPanel(leaderboardPanel);
     await loadLeaderboardFromCloud();
     populateLeaderboardLevelSelect(currentLevel);
     setLeaderboardViewMode(leaderboardViewMode);
@@ -3827,7 +3826,7 @@
   }
 
   closeLeaderboardBtn.addEventListener('click', () => {
-    leaderboardPanel.classList.add('hidden');
+    closePanelAndRestore();
   });
 
   migrateScoresBtn.addEventListener('click', async () => {
@@ -4113,6 +4112,46 @@
 
   const editorToggle = document.getElementById('editorToggle');
   const editorPanel = document.getElementById('editorPanel');
+
+  // Affichage exclusif des écrans/panneaux : ouvrir un menu (classement, admin...)
+  // remplace ce qui est affiché plutôt que de s'empiler en dessous. On mémorise
+  // l'écran affiché juste avant l'ouverture d'un panneau pour pouvoir y revenir
+  // proprement à la fermeture (reprendre la partie en cours, par exemple).
+  const MAIN_VIEWS = ['startScreen', 'resumeScreen', 'levelScreen', 'rulesScreen', 'quizCard', 'resultCard', 'leaderboardPanel', 'editorPanel'];
+  let viewBeforePanel = null;
+
+  function hideAllMainViews(){
+    MAIN_VIEWS.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('hidden');
+    });
+  }
+
+  function openPanel(panelEl){
+    // Ne mémorise l'écran de départ qu'une seule fois (pas si un panneau est
+    // déjà ouvert et qu'on bascule vers un autre panneau).
+    if (!viewBeforePanel){
+      viewBeforePanel = MAIN_VIEWS.find(id => {
+        const el = document.getElementById(id);
+        return el && id !== 'leaderboardPanel' && id !== 'editorPanel' && !el.classList.contains('hidden');
+      }) || null;
+    }
+    hideAllMainViews();
+    panelEl.classList.remove('hidden');
+    panelEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function closePanelAndRestore(){
+    hideAllMainViews();
+    const target = viewBeforePanel ? document.getElementById(viewBeforePanel) : null;
+    if (target){
+      target.classList.remove('hidden');
+    } else {
+      startScreen.classList.remove('hidden');
+    }
+    viewBeforePanel = null;
+  }
+
   const reviewForm = document.getElementById('reviewForm');
   const reviewInput = document.getElementById('reviewInput');
   const answerField = document.getElementById('answerField');
@@ -4617,8 +4656,11 @@
   editorToggle.addEventListener('click', () => {
     settingsDropdown.classList.add('hidden');
     const willShow = editorPanel.classList.contains('hidden');
-    editorPanel.classList.toggle('hidden');
-    if (willShow) editorPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (willShow){
+      openPanel(editorPanel);
+    } else {
+      closePanelAndRestore();
+    }
   });
 
   // Le bouton de gestion des critiques n'est visible qu'après avoir :
