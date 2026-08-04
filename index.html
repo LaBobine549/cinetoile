@@ -565,6 +565,22 @@
     background: transparent;
     border-color: transparent;
   }
+  .level-stars{
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+  }
+  .level-star-icon{
+    width: 22px;
+    height: 22px;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    filter: drop-shadow(2px 2px 0 rgba(0,0,0,.55));
+    margin-right: -10px;
+  }
+  .level-star-icon:last-child{ margin-right: 0; }
   .level-name{
     position: absolute;
     left: 50%;
@@ -2065,6 +2081,15 @@
     return (lvl && lvl.lives) || 5;
   }
 
+  // Etoiles de difficulte (mode Classique) : moins de vies = niveau plus dur = plus d'etoiles.
+  const LEVEL_STAR_ICON = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGwAAABUCAYAAABnT9INAAABzklEQVR4nO3dMUoDURCA4V3JdaxtTJUyFxBvIHgcwSvYpUnKVLFJk8bbWKiF7Q44MI/3/vh/ZZBN5Hdg2F038wRxfzt9tzz++8c0tzx+lZveH0A5BoMxGIzBYAwGM9xmlN0Gj6+5v7nN01fq50fbHp0wGIPBGAzGYDAGg1n1/gB/ld0Gs8fJbo+9OGEwBoMxGIzBYAwG021LbH0FuUr0OXudY3TCYAwGYzAYg8EYDGYebVs7nd8WX/+8PDZ9391++Vziy6Hp26Y5YTAGgzEYjMFgDAYTnkuMtrX/5nnb532j7dQJgzEYjMFgDAZjMJhwS1zfPSy+7vZYK3uu0gmDMRiMwWAMBmMwmPDeuuyV6NbbY68rzlWy22B036MTBmMwGIPBGAzGYDCr0bbBaxVduY62x6iLEwZjMBiDwRgMxmAwZfcleoX6V7T1RVtidnt0wmAMBmMwGIPBGAym+ZNwrnV77PW/z04YjMFgDAZjMBiDwaS3xGjrqzrOaNtj1TaYPccYccJgDAZjMBiDwRgMpuxcYvYp09F9d9H2WPXdK5Gq/y6JVD2X0gmDMRiMwWAMBmMwmLKnald9F8loT/ke7fdywmAMBmMwGIPBGAzmB/XkW8LdPjO+AAAAAElFTkSuQmCC';
+  function starsForLevel(level){
+    const lives = (level && level.lives) || 5;
+    if (lives >= 4) return 1;
+    if (lives === 3) return 2;
+    return 3;
+  }
+
   function getLevelMode(levelName){
     const lvl = findLevel(levelName);
     return (lvl && lvl.mode) || 'normal';
@@ -3118,16 +3143,33 @@
       btn.type = 'button';
       btn.className = 'level-btn';
 
-      if (level.imageUrl){
-        const img = document.createElement('img');
-        img.src = level.imageUrl;
-        img.alt = '';
-        img.className = 'level-thumb';
-        btn.appendChild(img);
+      if (level.mode === 'rush'){
+        if (level.imageUrl){
+          const img = document.createElement('img');
+          img.src = level.imageUrl;
+          img.alt = '';
+          img.className = 'level-thumb';
+          btn.appendChild(img);
+        } else {
+          const placeholder = document.createElement('span');
+          placeholder.className = 'level-thumb level-thumb-placeholder';
+          btn.appendChild(placeholder);
+        }
       } else {
-        const placeholder = document.createElement('span');
-        placeholder.className = 'level-thumb level-thumb-placeholder';
-        btn.appendChild(placeholder);
+        // Mode Classique : plus d'images de niveaux (retirées suite à un souci de droits
+        // sur certaines images utilisées) — remplacées par des étoiles de difficulté,
+        // légèrement superposées avec une ombre pour donner du relief.
+        const starsWrap = document.createElement('span');
+        starsWrap.className = 'level-stars';
+        const starCount = starsForLevel(level);
+        for (let i = 0; i < starCount; i++){
+          const star = document.createElement('img');
+          star.src = LEVEL_STAR_ICON;
+          star.alt = '';
+          star.className = 'level-star-icon';
+          starsWrap.appendChild(star);
+        }
+        btn.appendChild(starsWrap);
       }
 
       const nameSpan = document.createElement('span');
