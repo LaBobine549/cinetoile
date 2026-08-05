@@ -2507,6 +2507,19 @@
         </div>
       </div>
 
+      <div class="editor-column">
+        <div class="custom-list">
+          <h3>GENERIQUE — JOUEUR</h3>
+          <p class="hint">Donne assez d'XP à un joueur pour que tous les paliers du Générique deviennent disponibles. Il devra quand même cliquer sur "RECLAMER" lui-même pour chacun.</p>
+          <div class="field">
+            <label for="adminGeneriquePseudoField">Pseudo du joueur</label>
+            <input type="text" id="adminGeneriquePseudoField" placeholder="Ex : LaBobine">
+          </div>
+          <button type="button" class="primary-btn" id="adminUnlockGeneriqueBtn">TOUT RENDRE DISPONIBLE</button>
+          <div class="editor-form-msg" id="adminGeneriqueMsg"></div>
+        </div>
+      </div>
+
     </div>
 
     <div class="import-export-row">
@@ -5011,12 +5024,16 @@
     settingsDropdown.classList.add('hidden');
     generiquePage = 0;
     if (isAdminUnlocked){
-      generiqueLevelSummary.textContent = "Le passe GENERIQUE n'est pas suivi pour le compte admin.";
-      generiquePathWrap.innerHTML = '';
-      openPanel(generiquePanel);
-      return;
+      // Le compte admin ne suit pas de vraie progression (ses parties ne
+      // comptent pas), donc on affiche directement tout comme si le niveau
+      // max était atteint — pratique pour prévisualiser/tester chaque
+      // récompense sans avoir à tricher l'XP.
+      genreClaimed = {};
+      genreActive = { decor: null, musique: null, scene: null };
+      playerXP = xpForLevel(MAX_ACCOUNT_LEVEL);
+    } else {
+      await loadPlayerXPFromCloud(playerName);
     }
-    await loadPlayerXPFromCloud(playerName);
     setGeneriqueTab('path');
     updateGeneriqueAlert();
     openPanel(generiquePanel);
@@ -5314,6 +5331,44 @@
       rulesFormMsg.textContent = '';
       rulesFormMsg.className = 'editor-form-msg';
     }, 2000);
+  });
+
+  const adminGeneriquePseudoField = document.getElementById('adminGeneriquePseudoField');
+  const adminUnlockGeneriqueBtn = document.getElementById('adminUnlockGeneriqueBtn');
+  const adminGeneriqueMsg = document.getElementById('adminGeneriqueMsg');
+
+  adminUnlockGeneriqueBtn.addEventListener('click', async () => {
+    const pseudo = adminGeneriquePseudoField.value.trim();
+    if (!pseudo){
+      adminGeneriqueMsg.textContent = 'Indique un pseudo.';
+      adminGeneriqueMsg.className = 'editor-form-msg error';
+      return;
+    }
+    if (!firebaseReady){
+      adminGeneriqueMsg.textContent = 'Pas de connexion au serveur.';
+      adminGeneriqueMsg.className = 'editor-form-msg error';
+      return;
+    }
+    // On donne pile assez d'XP pour atteindre le niveau max (20) : ça rend
+    // tous les paliers du Générique disponibles, sans les réclamer à la
+    // place du joueur — il garde la main pour cliquer "RECLAMER" lui-même.
+    const MAX_XP_FOR_LEVEL_20 = xpForLevel(MAX_ACCOUNT_LEVEL);
+    try {
+      const ref = db.collection('players').doc(normalize(pseudo));
+      const doc = await ref.get();
+      const currentXP = doc.exists ? (doc.data().totalXP || 0) : 0;
+      const newXP = Math.max(currentXP, MAX_XP_FOR_LEVEL_20);
+      await ref.set({ name: pseudo, totalXP: newXP }, { merge: true });
+      adminGeneriqueMsg.textContent = `"${pseudo}" peut maintenant tout réclamer dans GENERIQUE !`;
+      adminGeneriqueMsg.className = 'editor-form-msg ok';
+    } catch (err){
+      adminGeneriqueMsg.textContent = "Erreur : impossible d'enregistrer.";
+      adminGeneriqueMsg.className = 'editor-form-msg error';
+    }
+    setTimeout(() => {
+      adminGeneriqueMsg.textContent = '';
+      adminGeneriqueMsg.className = 'editor-form-msg';
+    }, 4000);
   });
 
   async function playCorrectSound(){
