@@ -4036,6 +4036,14 @@
     settingsDropdown.classList.toggle('hidden');
   });
 
+  // Empêche tout clic/tap sur un bouton du menu de remonter jusqu'au
+  // document et de se faire "rattraper" par le gestionnaire de fermeture
+  // ci-dessous — plus fiable sur mobile, où le clic de fermeture peut
+  // parfois se déclencher en même temps qu'un tap sur un des boutons.
+  settingsDropdown.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+
   document.addEventListener('click', (e) => {
     if (settingsDropdown.classList.contains('hidden')) return;
     if (settingsDropdown.contains(e.target) || e.target === settingsGearBtn) return;
