@@ -1046,6 +1046,15 @@
     margin-right: -10px;
   }
   .level-star-icon:last-child{ margin-right: 0; }
+
+  .level-hourglass-icon{
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    filter: drop-shadow(2px 2px 0 rgba(0,0,0,.55)) drop-shadow(0 0 5px rgba(255,90,20,.6));
+  }
   .level-name{
     position: absolute;
     left: 50%;
@@ -2851,6 +2860,7 @@
 
   // Etoiles de difficulte (mode Classique) : moins de vies = niveau plus dur = plus d'etoiles.
   const LEVEL_STAR_ICON = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGwAAABUCAYAAABnT9INAAABzklEQVR4nO3dMUoDURCA4V3JdaxtTJUyFxBvIHgcwSvYpUnKVLFJk8bbWKiF7Q44MI/3/vh/ZZBN5Hdg2F038wRxfzt9tzz++8c0tzx+lZveH0A5BoMxGIzBYAwGM9xmlN0Gj6+5v7nN01fq50fbHp0wGIPBGAzGYDAGg1n1/gB/ld0Gs8fJbo+9OGEwBoMxGIzBYAwG021LbH0FuUr0OXudY3TCYAwGYzAYg8EYDGYebVs7nd8WX/+8PDZ9391++Vziy6Hp26Y5YTAGgzEYjMFgDAYTnkuMtrX/5nnb532j7dQJgzEYjMFgDAZjMJhwS1zfPSy+7vZYK3uu0gmDMRiMwWAMBmMwmPDeuuyV6NbbY68rzlWy22B036MTBmMwGIPBGAzGYDCr0bbBaxVduY62x6iLEwZjMBiDwRgMxmAwZfcleoX6V7T1RVtidnt0wmAMBmMwGIPBGAym+ZNwrnV77PW/z04YjMFgDAZjMBiDwaS3xGjrqzrOaNtj1TaYPccYccJgDAZjMBiDwRgMpuxcYvYp09F9d9H2WPXdK5Gq/y6JVD2X0gmDMRiMwWAMBmMwmLKnald9F8loT/ke7fdywmAMBmMwGIPBGAzmB/XkW8LdPjO+AAAAAElFTkSuQmCC';
+  const LEVEL_HOURGLASS_ICON = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAACRUlEQVR4nO3dIU4DQRxGcbapIAgU4QIgqjgB18AASXsRFHeoRmHQCNAYTAW6XIBgQJCSEOAG84nJZnb73s8uwzbwMsn8s2275Xz2tyOsSesXoLYMAM4A4AwAzgDgDADOAOAMAM4A4AwAzgDgDADOAOAMAM4A4Lq96aT4PMDZyUHVDZ5eP6vWr68Oq9a3dnz9VrX+9Gi/av3dy3vxujsAnAHAGQCcAcAZAJwBwBkAXJwDJPQ5wdDP+Yk7AJwBwBkAnAHAGQCcAcAZAFyXfmDsc4LWWp/zv35+i/9jdwA4A4AzADgDgDMAOAOAMwC4OAdI6HOCoZ/zE3cAOAOAMwA4A4AzADgDgDMAuOo5QNJ6TnBzvlu1fnG7qVrf+pyfuAPAGQCcAcAZAJwBwBkAnAHATfu+QTrHpjlBOkfXzglqDf2cn7gDwBkAnAHAGQCcAcAZAJwBwBkAnAHAGQCcAcAZAJwBwBkAnAHA9f48QOv3BfQtvb70vED6+/i+APXKAOAMAM4A4AwAzgDgDABu6z8ncP1wGX7BY/Fy+l5APydQo2YAcAYAZwBwBgBnAHAGADf67w2M5/x4g/Ic4Hn1Ubx+cf9dvD70OYE7AJwBwBkAnAHAGQCcAcAZAFy39ef8+ALKc4Bk7HMCdwA4A4AzADgDgDMAOAOAMwC4OAegn/OTNAdIWs8J3AHgDADOAOAMAM4A4AwAzgDguuV8VvU8gMbNHQDOAOAMAM4A4AwAzgDgDADOAOAMAM4A4AwAzgDgDADOAOAMAO4fo3KLbiiA0ngAAAAASUVORK5CYII=';
   function starsForLevel(level){
     const lives = (level && level.lives) || 5;
     if (lives >= 4) return 1;
@@ -4162,17 +4172,14 @@
       btn.className = 'level-btn';
 
       if (level.mode === 'rush'){
-        if (level.imageUrl){
-          const img = document.createElement('img');
-          img.src = level.imageUrl;
-          img.alt = '';
-          img.className = 'level-thumb';
-          btn.appendChild(img);
-        } else {
-          const placeholder = document.createElement('span');
-          placeholder.className = 'level-thumb level-thumb-placeholder';
-          btn.appendChild(placeholder);
-        }
+        // Mode Rush : plus d'images de niveaux non plus (même souci de droits
+        // qu'en Classique) — remplacées par un sablier, cohérent avec l'esprit
+        // "course contre la montre" de ce mode.
+        const hourglass = document.createElement('img');
+        hourglass.src = LEVEL_HOURGLASS_ICON;
+        hourglass.alt = '';
+        hourglass.className = 'level-thumb level-hourglass-icon';
+        btn.appendChild(hourglass);
       } else {
         // Mode Classique : plus d'images de niveaux (retirées suite à un souci de droits
         // sur certaines images utilisées) — remplacées par des étoiles de difficulté,
