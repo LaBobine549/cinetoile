@@ -634,6 +634,39 @@
     .generique-available-badge{ font-size: 0.48rem; padding: 5px 8px; }
   }
 
+  /* Fait scintiller le bouton "GENERIQUE" du menu réglages quand une
+     récompense est disponible, pour attirer l'oeil vers lui. */
+  .generique-btn-glow{
+    position: relative;
+    overflow: hidden;
+    border-color: var(--yellow) !important;
+    animation: generique-btn-pulse 1.6s ease-in-out infinite;
+  }
+  .generique-btn-glow::after{
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(115deg, transparent, rgba(255,255,255,.75) 50%, transparent);
+    transform: skewX(-20deg);
+    animation: generique-shine-sweep 2.6s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes generique-btn-pulse{
+    0%, 100%{ filter: drop-shadow(0 0 2px rgba(249,240,2,.3)); }
+    50%{ filter: drop-shadow(0 0 10px rgba(249,240,2,.85)); }
+  }
+  @keyframes generique-shine-sweep{
+    0%, 30%{ left: -60%; }
+    70%, 100%{ left: 130%; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .generique-btn-glow{ animation: none; }
+    .generique-btn-glow::after{ animation: none; display: none; }
+  }
+
   .settings-gear-btn{
     background: #140a28;
     border: 2px solid var(--yellow);
@@ -3106,8 +3139,10 @@
   function updateGeneriqueAlert(){
     const currentLevel = levelFromXP(playerXP);
     const hasAvailable = GENERIQUE_TIERS.some(t => currentLevel >= t.level && !genreClaimed[t.id]);
-    generiqueAlertDot.classList.toggle('hidden', !hasAvailable || isAdminUnlocked);
-    generiqueAvailableBadge.classList.toggle('hidden', !hasAvailable || isAdminUnlocked);
+    const show = hasAvailable && !isAdminUnlocked;
+    generiqueAlertDot.classList.toggle('hidden', !show);
+    generiqueAvailableBadge.classList.toggle('hidden', !show);
+    viewGeneriqueBtn.classList.toggle('generique-btn-glow', show);
   }
 
   function showXPPopup(amount){
@@ -3295,7 +3330,7 @@
       answerInput.disabled = false;
       answerSubmitBtn.disabled = false;
       pauseBtn.textContent = '⏸ PAUSE';
-      answerInput.focus();
+      focusAnswerInput();
     }
   });
 
@@ -3330,6 +3365,14 @@
   const reviewText = document.getElementById('reviewText');
   const answerForm = document.getElementById('answerForm');
   const answerInput = document.getElementById('answerInput');
+
+  // Sur mobile/tactile, donner le focus au champ ouvre le clavier virtuel —
+  // gênant si ça arrive automatiquement (ex: a chaque nouvelle question).
+  // On ne le fait donc qu'sur les appareils avec un vrai pointeur (souris).
+  const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+  function focusAnswerInput(){
+    if (!isTouchDevice) answerInput.focus();
+  }
   const answerSubmitBtn = answerForm.querySelector('.answer-submit-btn');
   let questionAnswered = false;
   const feedbackEl = document.getElementById('feedback');
@@ -3950,7 +3993,7 @@
     renderQuestion();
     updateWalker();
     markLevelSeen(currentLevel);
-    answerInput.focus();
+    focusAnswerInput();
   });
 
   resumeNewBtn.addEventListener('click', () => {
@@ -4217,7 +4260,7 @@
     updateTopBarVisibility();
     rebuildPool();
     resetQuiz();
-    answerInput.focus();
+    focusAnswerInput();
     applyGenreDecor();
   }
 
@@ -5684,7 +5727,7 @@
     answerInput.disabled = false;
     answerInput.className = 'answer-input';
     answerSubmitBtn.disabled = false;
-    answerInput.focus();
+    focusAnswerInput();
 
     document.querySelectorAll('.frame').forEach(f => f.classList.remove('current'));
     const curFrame = document.getElementById('frame-' + realIndex);
@@ -5824,7 +5867,7 @@
       feedbackEl.className = 'feedback wrong';
       answerInput.value = '';
       answerInput.className = 'answer-input wrong';
-      answerInput.focus();
+      focusAnswerInput();
       nextBtn.style.display = 'none';
     } else {
       attemptsLeft = Math.max(0, attemptsLeft - 1);
@@ -5838,7 +5881,7 @@
         feedbackEl.className = 'feedback wrong';
         answerInput.value = '';
         answerInput.className = 'answer-input wrong';
-        answerInput.focus();
+        focusAnswerInput();
         nextBtn.style.display = 'none';
       } else {
         questionAnswered = true;
