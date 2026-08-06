@@ -3441,6 +3441,7 @@
   const badgeUnlockQueue = [];
 
   async function checkAndAwardBadges(justPlayedLevel){
+    console.log('[badges] checkAndAwardBadges appelé, niveau=', justPlayedLevel, 'firebaseReady=', firebaseReady, 'playerName=', playerName, 'isAdminUnlocked=', isAdminUnlocked);
     if (!firebaseReady || !playerName || isAdminUnlocked) return;
     const playerId = normalize(playerName);
 
@@ -3450,10 +3451,12 @@
       if (!badge) return;
       playerBadges[id] = true;
       badgeUnlockQueue.push(badge);
+      console.log('[badges] debloque :', id);
     }
 
     try {
       const levelsSnap = await db.collection('players').doc(playerId).collection('levels').get();
+      console.log('[badges] nb de niveaux trouves pour ce joueur :', levelsSnap.size);
       let totalGamesPlayed = 0;
       const classicLevelsPlayed = new Set();
       const rushLevelsPlayed = new Set();
@@ -3463,6 +3466,7 @@
 
       levelsSnap.forEach(doc => {
         const d = doc.data();
+        console.log('[badges] niveau doc:', doc.id, d);
         totalGamesPlayed += d.gamesPlayed || 0;
         const lvlName = d.level;
         if (!lvlName) return;
@@ -3521,6 +3525,7 @@
         await savePlayerBadgesToCloud();
       }
     } catch (err){
+      console.error('[badges] erreur dans checkAndAwardBadges:', err);
       // échec silencieux : on retentera a la prochaine partie, sans planter le jeu
     }
   }
