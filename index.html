@@ -5306,10 +5306,19 @@
   // ---------- Badges : onglet Galerie (effet carte holo) ----------
   function renderBadgesGallery(){
     badgeGalleryThumbs.innerHTML = '';
-    BADGE_CATALOG.forEach((badge, i) => {
-      const isUnlocked = !!playerBadges[badge.id];
+    const unlockedBadges = BADGE_CATALOG.filter(b => playerBadges[b.id]);
+
+    if (unlockedBadges.length === 0){
+      badgeGalleryCard.parentElement.classList.add('hidden');
+      badgeGalleryCaption.textContent = '';
+      badgeGalleryCondition.textContent = 'Aucun badge débloqué pour l\'instant — reviens ici une fois tes premiers badges obtenus !';
+      return;
+    }
+    badgeGalleryCard.parentElement.classList.remove('hidden');
+
+    unlockedBadges.forEach(badge => {
       const thumb = document.createElement('div');
-      thumb.className = 'badge-gallery-thumb' + (isUnlocked ? '' : ' locked');
+      thumb.className = 'badge-gallery-thumb';
       thumb.dataset.id = badge.id;
       const img = document.createElement('img');
       img.src = BADGE_IMAGES[badge.id];
@@ -5318,18 +5327,16 @@
       thumb.addEventListener('click', () => selectGalleryBadge(badge.id));
       badgeGalleryThumbs.appendChild(thumb);
     });
-    const firstUnlocked = BADGE_CATALOG.find(b => playerBadges[b.id]);
-    selectGalleryBadge((firstUnlocked || BADGE_CATALOG[0]).id);
+    selectGalleryBadge(unlockedBadges[0].id);
   }
 
   function selectGalleryBadge(badgeId){
     const badge = BADGE_CATALOG.find(b => b.id === badgeId);
-    if (!badge) return;
-    const isUnlocked = !!playerBadges[badge.id];
+    if (!badge || !playerBadges[badge.id]) return;
     badgeGalleryImg.src = BADGE_IMAGES[badge.id];
-    badgeGalleryImg.style.filter = isUnlocked ? 'none' : 'grayscale(1) brightness(.5)';
-    badgeGalleryCaption.textContent = isUnlocked ? badge.name : '🔒 ' + badge.name;
-    badgeGalleryCondition.textContent = isUnlocked ? `+${badge.xp} XP` : 'Condition : ' + badge.condition;
+    badgeGalleryImg.style.filter = 'none';
+    badgeGalleryCaption.textContent = badge.name;
+    badgeGalleryCondition.textContent = `+${badge.xp} XP`;
     document.querySelectorAll('.badge-gallery-thumb').forEach(t => {
       t.classList.toggle('active', t.dataset.id === badgeId);
     });
