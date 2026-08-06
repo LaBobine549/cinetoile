@@ -3431,6 +3431,7 @@
     } catch (err){
       // échec silencieux : l'XP reste comptabilisée localement pour cette session
     }
+  }
 
   // ---------- Détection automatique des badges ----------
   // Appelée juste après qu'une partie soit enregistrée. Regarde les
@@ -3566,7 +3567,6 @@
         }, 3600);
       }, i * 700);
     });
-  }
   }
 
   const rushGaugeRow = document.getElementById('rushGaugeRow');
