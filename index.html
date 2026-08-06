@@ -3193,6 +3193,16 @@
     scene: 'Mise en scène'
   };
 
+  // Empêche un appel Firebase lent/bloqué de figer l'interface indéfiniment :
+  // au-delà du délai donné, on abandonne et on continue avec ce qu'on a déjà
+  // (valeurs par défaut), plutôt que de laisser le joueur face à un écran vide.
+  function withTimeout(promise, ms = 6000){
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))
+    ]);
+  }
+
   async function loadPlayerXPFromCloud(name){
     playerXP = 0;
     genreClaimed = {};
@@ -3201,7 +3211,7 @@
     firstPlaceLevels = {};
     if (!firebaseReady || !name) return;
     try {
-      const doc = await db.collection('players').doc(normalize(name)).get();
+      const doc = await withTimeout(db.collection('players').doc(normalize(name)).get());
       if (doc.exists){
         const d = doc.data();
         playerXP = d.totalXP || 0;
@@ -3211,7 +3221,7 @@
         firstPlaceLevels = d.firstPlaceLevels || {};
       }
     } catch (err){
-      // pas de connexion : l'XP, le passe et les badges restent vides pour cette session, sans planter le jeu
+      // pas de connexion (ou trop lente) : l'XP, le passe et les badges restent vides pour cette session, sans planter le jeu
     }
   }
 
