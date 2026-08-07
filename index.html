@@ -19,6 +19,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Anton&family=Orbitron:wght@700;900&family=Rajdhani:wght@700&display=swap" rel="stylesheet">
 <style>
   :root{
+    --content-width: 720px;
     --bg: #0b0316;
     --bg-deep: #05010c;
     --card: #140a28;
@@ -611,7 +612,7 @@
     flex-wrap: wrap;
     gap: 12px;
     width: 100%;
-    max-width: 560px;
+    max-width: var(--content-width);
     margin: 0 auto 26px;
   }
 
@@ -736,7 +737,7 @@
 
   .rules-screen{
     width: 100%;
-    max-width: 560px;
+    max-width: var(--content-width);
     margin-bottom: 22px;
   }
   .rules-text{
@@ -749,7 +750,7 @@
 
   .start-screen{
     width: 100%;
-    max-width: 560px;
+    max-width: var(--content-width);
     margin-bottom: 26px;
     position: relative;
   }
@@ -774,7 +775,7 @@
   }
   .admin-gate{
     width: 100%;
-    max-width: 560px;
+    max-width: var(--content-width);
     margin-bottom: 26px;
     position: relative;
   }
@@ -1782,7 +1783,7 @@
   /* ---------- Walk to the cinema ---------- */
   .walk-scene{
     width: 100%;
-    max-width: 560px;
+    max-width: var(--content-width);
     margin-top: 22px;
   }
 
@@ -1847,7 +1848,15 @@
   /* ---------- Ticket / arcade screen ---------- */
   .stage{
     width: 100%;
-    max-width: 560px;
+    max-width: var(--content-width);
+  }
+  @media (min-width: 700px){
+    .stage.plans-wide{
+      max-width: 960px;
+    }
+    .stage.plans-wide .plans-backdrop-img{
+      max-height: 62vh;
+    }
   }
 
   .plans-attempt-label{
@@ -1856,7 +1865,7 @@
     color: var(--muted);
     text-align: center;
     margin: 0 auto 10px;
-    max-width: 560px;
+    max-width: var(--content-width);
   }
   .plans-points-label{
     font-family:'Press Start 2P', monospace;
@@ -2256,7 +2265,7 @@
   /* ---------- Editor panel ---------- */
   .editor-panel{
     width: 100%;
-    max-width: 560px;
+    max-width: var(--content-width);
     background: var(--card);
     border: 3px solid var(--cyan);
     border-radius: var(--radius);
@@ -2988,7 +2997,7 @@
 
   <div class="game-area hidden" id="gameArea">
 
-  <div class="stage">
+  <div class="stage" id="stage">
     <div class="ticket" id="quizCard">
       <div class="ticket-label">
         <span id="qCounter">QUESTION 1 / 12</span>
@@ -4228,6 +4237,7 @@
   backFromClassicBtn.addEventListener('click', showModeSelect);
   backFromRushBtn.addEventListener('click', showModeSelect);
   const gameArea = document.getElementById('gameArea');
+  const stage = document.getElementById('stage');
   const pseudoForm = document.getElementById('pseudoForm');
   const pseudoInput = document.getElementById('pseudoInput');
   const settingsGearBtn = document.getElementById('settingsGearBtn');
@@ -4753,6 +4763,7 @@
     inPlansSession = false;
     plansGameCard.classList.add('hidden');
     plansResultCard.classList.add('hidden');
+    stage.classList.remove('plans-wide');
     resultCard.classList.add('hidden');
     quizCard.classList.remove('hidden');
     initFilmstrip();
@@ -4783,6 +4794,7 @@
     inPlansSession = false;
     plansGameCard.classList.add('hidden');
     plansResultCard.classList.add('hidden');
+    stage.classList.remove('plans-wide');
     resetTheme();
     renderLevelList();
     showModeSelect();
@@ -5032,6 +5044,7 @@
     inPlansSession = false;
     plansGameCard.classList.add('hidden');
     plansResultCard.classList.add('hidden');
+    stage.classList.remove('plans-wide');
     markLevelSeen(level);
     rushTotalTime = 0;
     rushSegmentStart = null;
@@ -6628,6 +6641,7 @@
     resultCard.classList.add('hidden');
     plansResultCard.classList.add('hidden');
     plansGameCard.classList.remove('hidden');
+    stage.classList.add('plans-wide');
     filmstrip.classList.add('hidden');
     skipRow.classList.add('hidden');
     updateTopBarVisibility();
