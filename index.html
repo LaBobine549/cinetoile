@@ -6464,10 +6464,18 @@
     try {
       const res = await withTimeout(fetch(`https://api.themoviedb.org/3/movie/${movie.id}/images?api_key=${TMDB_API_KEY}`));
       const data = await res.json();
+      // On priorise les plans sans langue detectee (donc probablement sans texte
+      // incruste), mais on ne les EXCLUT plus completement s'il n'y en a pas
+      // assez — on complete avec les autres, tries ensuite par note/largeur.
+      // C'est a l'admin de juger visuellement si un plan contient du texte.
       const backdrops = (data.backdrops || [])
-        .filter(b => b.iso_639_1 === null)
-        .sort((a, b) => (b.vote_average - a.vote_average) || (b.width - a.width))
-        .slice(0, 15)
+        .sort((a, b) => {
+          const aClean = a.iso_639_1 === null ? 0 : 1;
+          const bClean = b.iso_639_1 === null ? 0 : 1;
+          if (aClean !== bClean) return aClean - bClean;
+          return (b.vote_average - a.vote_average) || (b.width - a.width);
+        })
+        .slice(0, 24)
         .map(b => `https://image.tmdb.org/t/p/w500${b.file_path}`);
 
       if (backdrops.length < 3){
