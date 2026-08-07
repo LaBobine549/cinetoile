@@ -129,6 +129,28 @@
       0 0 20px #ffb700,
       0 0 40px rgba(255,183,0,.6);
   }
+  html.decor-studio .marquee-frame{
+    border-color: #fbf6e8;
+    box-shadow:
+      0 0 16px rgba(255,255,255,.85),
+      0 0 34px rgba(255,183,0,.6),
+      6px 6px 0 #ffb700;
+    animation: marquee-diamond-glow 5s ease-in-out infinite;
+  }
+  @keyframes marquee-diamond-glow{
+    0%, 100%{
+      box-shadow:
+        0 0 16px rgba(255,255,255,.85),
+        0 0 34px rgba(255,183,0,.6),
+        6px 6px 0 #ffb700;
+    }
+    50%{
+      box-shadow:
+        0 0 10px rgba(255,255,255,.55),
+        0 0 22px rgba(255,183,0,.35),
+        6px 6px 0 #ffb700;
+    }
+  }
   html.decor-studio .editor-panel,
   html.decor-studio .ticket{
     border-color: #fbf6e8;
@@ -1240,6 +1262,21 @@
     border: 3px solid var(--card-edge);
     box-shadow: 4px 4px 0 rgba(0,0,0,.4);
     flex-shrink: 0;
+  }
+  .generique-node-icon-img{
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+  .generique-node.locked .generique-node-icon-img{
+    opacity: .5;
+    filter: grayscale(1);
+  }
+  .generique-node.final .generique-node-icon-img{
+    width: 52px;
+    height: 52px;
   }
   .generique-node-level{
     font-family: 'Press Start 2P', monospace;
@@ -3657,11 +3694,11 @@
     if (vhsTrackingBand) vhsTrackingBand.classList.remove('active');
     stopStudioSparkles();
 
-    // Le mode Rush garde son propre thème ("Enfer écarlate") et n'est jamais
-    // affecté par les décors du Générique — on ne va pas plus loin si une
-    // partie Rush est activement en cours.
+    // Le mode Rush garde son propre thème pour les autres décors du Générique
+    // (Noir et Blanc, Sépia, VHS), mais Studio de cinéma doit désormais
+    // s'appliquer partout, Rush inclus.
     const inRushGame = !gameArea.classList.contains('hidden') && getLevelMode(currentLevel) === 'rush';
-    if (inRushGame) return;
+    if (inRushGame && genreActive.decor !== 'studio_cinema') return;
 
     if (genreActive.decor === 'noir_blanc'){
       document.documentElement.classList.add('decor-noir-blanc');
@@ -3686,8 +3723,19 @@
       if (vhsTrackingBand) vhsTrackingBand.classList.add('active');
     } else if (genreActive.decor === 'studio_cinema'){
       document.documentElement.classList.add('decor-studio');
+      // On efface les couleurs inline laissées par le thème du niveau en cours
+      // (elles auraient sinon priorité sur la règle CSS "html.decor-studio"),
+      // pour que Studio de cinéma remplace vraiment toutes les couleurs.
+      const root = document.documentElement.style;
+      ['--pink','--cyan','--purple','--yellow','--green','--wrong','--bg','--bg-deep','--purple-rgb','--cyan-rgb'].forEach(p => root.removeProperty(p));
+      stopFireAmbience();
       const sparkleZone = document.getElementById('studioSparkleZone');
       if (sparkleZone) startStudioSparkles(sparkleZone);
+    } else if (currentLevel){
+      // On quitte Studio de cinéma (ou aucun décor n'est actif) en pleine
+      // partie : on restaure les couleurs propres au niveau en cours.
+      const lvl = findLevel(currentLevel);
+      applyTheme(lvl ? lvl.theme : 'default');
     }
 
     updateHearts();
@@ -4214,7 +4262,6 @@
     playLevelAnimation(chooseRushBtn, 'glitch');
     setTimeout(() => {
       modeSelectView.classList.add('hidden');
-      applyTheme('inferno');
       if (rulesConfig.enabled){
         pendingRulesThenRush = true;
         rulesTextEl.textContent = rulesConfig.rushText;
@@ -4227,12 +4274,7 @@
     }, 220);
   });
 
-  chooseRushBtn.addEventListener('mouseenter', () => {
-    if (!modeSelectView.classList.contains('hidden')) applyTheme('inferno');
-  });
-  chooseRushBtn.addEventListener('mouseleave', () => {
-    if (!modeSelectView.classList.contains('hidden')) resetTheme();
-  });
+
 
   backFromClassicBtn.addEventListener('click', showModeSelect);
   backFromRushBtn.addEventListener('click', showModeSelect);
@@ -5126,6 +5168,13 @@
   };
 
   function applyTheme(themeKey){
+    // Le décor "Studio de cinéma" du Générique doit toujours l'emporter sur le
+    // thème propre à chaque niveau — on n'écrase donc pas les couleurs inline
+    // ici s'il est actif : la règle CSS "html.decor-studio" prend le relais.
+    if (genreActive && genreActive.decor === 'studio_cinema'){
+      stopFireAmbience();
+      return;
+    }
     const theme = THEME_PRESETS[themeKey] || THEME_PRESETS.default;
     const root = document.documentElement.style;
     root.setProperty('--pink', theme.colors.pink);
@@ -5568,6 +5617,14 @@
   }
 
   const GENERIQUE_CATEGORY_ICON = { decor: '🎨', musique: '🎵', scene: '🎬' };
+  const GENERIQUE_NODE_ICONS = {
+    decor: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJAAAACACAYAAADkkOAjAAACSElEQVR4nO3dsWoUURiA0VlZLSQIvoB98E18BbGxVws7a7GzEHstxDplwPcQa8VeELGIYHyDveCXy0ySc9rJzA7st7e4/DNZFgAAAACug93sD7i5Ozqf/RlX2Z/zX9O/o+LG2jfA5SYgEgGRCIhEQCQCIhEQyXCPYfY+ztnnxzMvv5x9/TT1+iMnp98OHn/0du5vePY+khWIREAkAiIREImASAREIiCSfb3A7H2ckYc/3xz+g7uHD7//cXxxN/MfPjz5m86fvY80YgUiERCJgEgERCIgEgGRCIhkv/pzWy/vtfOfXsxtXFWj77fOC1mBSAREIiASAZEIiERAJAIiGc4DrT3vM/LxzrODx9d+LmxkNM8zmhcaHZ89L2QFIhEQiYBIBEQiIBIBkQiIJD8XNvTi8PtxlmVw/FWcF5rs6MH3wV+03+jsfZw6L2QFIhEQiYBIBEQiIBIBkQiIZP4+0DU3+z3No32c2fNCViASAZEIiERAJAIiERCJgEjm7wMN5nleH99Ol3/+5Xc6/6rzXBibJiASAZEIiERAJAIiERCJeaDJ1n4Pt/8bz6YJiERAJAIiERCJgEgERLKr+xRbf4/02u+JPjkdvR+pGc372Adi0wREIiASAZEIiERAJAIi2Y/2CdaeZ2HbrEAkAiIREImASAREIiASAZHk58Ju3X+Xzt/6PNFss9/fM9vlvntWJyASAZEIiERAJAIiERDJ1GeGlsU8UTX7ua7KCkQiIBIBkQiIREAkAiIREAAAAAAAAAAAAMuyLMs/SRtcVwGizxEAAAAASUVORK5CYII=',
+    musique: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHAAAACQCAYAAADQpO/JAAABw0lEQVR4nO3dsU0DMRiAUS4iXViEhu1gBWAB5mIUBF0kwghXOCffF97rE1v69BdW5Hi5m+y4nC6z9zDifPlZZq5/mLk44wSMEzBOwDgB4wSMEzDufvYG1nz+fk9d/+nwMHX9NSYwTsA4AeMEjBMwTsA4AeMEjBMwTsA4AeMEjBMwTsA4AeMEjBMwTsA4AeMEjBMwTsA4AeMEjBMwTsA4AeMEjBMwTsA4AeN2fz9w1N7v940ygXECxgkYJ2CcgHECxgkYd/PnwDWz/+9zlAmMEzBOwDgB4wSMEzBOwLjdnwMfv8Y+f7zONnbLBMYJGCdgnIBxAsYJGCdgnIBxAsYJGCdgnIBxAsYJGCdgnIBxAsYJGCdgnIBxAsYJGCdgnIBxAsYJGCdgnIBxAsYJGCdg3Ob3A4/L6TL0Ba8fV9rJbTKBcQLGCRgnYJyAcQLGCRg3fA4cPeedX95Ht/CvmcA4AeMEjBMwTsA4AeMEjNv890DnvG2ZwDgB4wSMEzBOwDgB4wSM2/27EWuOb8+ztzCVCYwTME7AOAHjBIwTME7AuOE31Ifv/22s/k78GhMYJ2CcgHECxgkYJ2CcgAAAAAAAAAA79QfyvBiZPXb/CAAAAABJRU5ErkJggg==',
+    scene: 'data:image/png;base64,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',
+    final: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZAAAAFACAYAAACSgSrjAAAGN0lEQVR4nO3dMU6jRwCG4f0RcrGCYg+TGnGEPcXKHAhrb7Dd9mlWqXMYChwKF3ibRElFlJch/xg/zwFGY2H8aqpv+QD/wfF4vF/7DrydZVnu1r4Dp+Ni7QsAcJoEBIBEQABIBASAREAASAQEgERAAEgEBIBEQABIBASAREAASAQEgERAAEgEBIBEQABIBASAREAASAQEgERAAEiWtS/A25p9w3xzcb1d+w6n7PD8uFv7Di+xsf6+eYEAkAgIAImAAJAICACJgACQCAgAiYAAkAgIAImAAJAICACJgACQCAgAiYAAkAgIAImAAJAICACJgACQCAgAiYAAkFyufQFOy+wb5vuHp7Wv8KKrTx+Hnjf67zH7xjpz8QIBIBEQABIBASAREAASAQEgERAAEgEBIBEQABIBASAREAASAQEgERAAEgEBIBEQABIBASAREAASAQEgERAAEgEBILGJPpnj8Xi/9h3+T7NvmI/2Y7cfet7t9mroeaON/j4vy3I38jxexwsEgERAAEgEBIBEQABIBASAREAASAQEgERAAEgEBIBEQABIBASAREAASAQEgERAAEgEBIBEQABIBASAREAASAQEgOTy3Da4z83m4nq79h04HaO/L4fnx93I8/xezcULBIBEQABIBASAREAASAQEgERAAEgEBIBEQABIBASAREAASAQEgERAAEgEBIBEQABIBASAREAASAQEgERAAEgEBIBkGb0xbIP7fds/PK19hZP2+7fnta/wotvt1dpX4A2N3qj3AgEgERAAEgEBIBEQABIBASAREAASAQEgERAAEgEBIBEQABIBASAREAASAQEgERAAEgEBIBEQABIBASAREAASAQEguVz7Av/mcPht7SvwD4c/fln7CryhH7v90PO+/Tr0uLPz9fvcG/VeIAAkAgJAIiAAJAICQCIgACQCAkAiIAAkAgJAIiAAJAICQCIgACQCAkAiIAAkAgJAIiAAJAICQCIgACQCAkAiIAAk02+ibzY3Q8+zsQ68ldk3zEfzAgEgERAAEgEBIBEQABIBASAREAASAQEgERAAEgEBIBEQABIBASAREAASAQEgERAAEgEBIBEQABIBASAREAASAQEgGb6Jfnh+3I08b3NxvR16no114E+zb5iP/j0dzQsEgERAAEgEBIBEQABIBASAREAASAQEgERAAEgEBIBEQABIBASAREAASAQEgERAAEgEBIBEQABIBASAREAASAQEgGT4JvroDfPRbJgDf/nyeT/0vNEb66N/T0dvrHuBAJAICACJgACQCAgAiYAAkAgIAImAAJAICACJgACQCAgAiYAAkAgIAImAAJAICACJgACQCAgAiYAAkAgIAImAAJAM30QfbfYN883mZuh5s39eWNPozfHRm+izb6yP5gUCQCIgACQCAkAiIAAkAgJAIiAAJAICQCIgACQCAkAiIAAkAgJAIiAAJAICQCIgACQCAkAiIAAkAgJAIiAAJAICQDL9Jvq5sbHOezL7pjev4wUCQCIgACQCAkAiIAAkAgJAIiAAJAICQCIgACQCAkAiIAAkAgJAIiAAJAICQCIgACQCAkAiIAAkAgJAIiAAJAICQHJ2m+ijN8dnN/rz7h+GHsdkbrfntWE+erP9y+f90PNm5wUCQCIgACQCAkAiIAAkAgJAIiAAJAICQCIgACQCAkAiIAAkAgJAIiAAJAICQCIgACQCAkAiIAAkAgJAIiAAJAICQHJ2m+ijHZ4fd2vf4SWbi+vtyPOuPn0cedyH/cPT0PPOzewb5uf2/3FuvEAASAQEgERAAEgEBIBEQABIBASAREAASAQEgERAAEgEBIBEQABIBASAREAASAQEgERAAEgEBIBEQABIBASAREAASKbfRN9sbta+wkkbvUk9+8Y6rzP7hvnsvn6fe6N+NC8QABIBASAREAASAQEgERAAEgEBIBEQABIBASAREAASAQEgERAAEgEBIBEQABIBASAREAASAQEgERAAEgEBIBEQAJLleDzer30J/rYsy93I8/x9WZPv8/vmBQJAIiAAJAICQCIgACQCAkAiIAAkAgJAIiAAJAICQCIgACQCAkAiIAAkAgJAIiAAJAICQCIgACQCAkAiIAAkAgJA8hMz15e1tTfYlwAAAABJRU5ErkJggg==',
+    lock: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHAAAACACAYAAADTcu1SAAAB0UlEQVR4nO3dIU7EQBiAUZaA41IIBOdBINAIBGchAYFAYDCYPQ0OATfYEcNk+5H3bJO2yZcRf9pOdyeLne8uflZfY8u+f752K89/uvLkrCdgnIBxAsYJGCdgnIBx0zPK7Jz39PJ88PjHx+fM6aft9/uDx9/fXqfOPzsnWoFxAsYJGCdgnIBxAsYJGHe2+gKjOa/u8ur64PHZOXHECowTME7AOAHjBIwTME7AOAHjBIwTME7AOAHjBIwTME7AuOXPA2c9Ptwf9fqj533HZgXGCRgnYJyAcQLGCRgnYNzm58CR2e/r6vvYWIFxAsYJGCdgnIBxAsYJGDecA7c+J239/kZG9z+ac63AOAHjBIwTME7AOAHjBIwbPksbzSmr94HZ+n6hs0b7yJgD/zkB4wSMEzBOwDgB4wSMEzBOwDgB4wSMEzBOwDgB4wSMy38fOLuPzM3t3R/dyXFYgXECxgkYJ2CcgHECxgkYJ2CcgHECxgkYJ2CcgHECxgkYJ2CcgHECxgkYJ2CcgHECxgkYl38vtP5e5ywrME7AOAHjBIwTME7AOAHjBIwTME7AOAHjBIwTME7AOAHjpv8bwVr+G/HPCRgnYJyAcQLGCRgnIAAAAIT8AiEnOP77mZ03AAAAAElFTkSuQmCC',
+    check: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAABwCAYAAADWrHjSAAACAElEQVR4nO3dsWnDUBRGYUvYXSDLZAQPkR1cZIGUWSCFJ0iTITJCyiwScGews4Fu8fO4Us75WiHbgsODd5+Np52GOkwP96Xr77fP6PVf5ufF69f7ZVq6Pkfvrs0zADgDgDMAOAOAMwA4A4Dbd3+Arav2+WvnCgBnAHAGAGcAcAYAZwBwBgDnHGCw9Lx/NFcAOAOAMwA4A4AzADgDgDMAOOcAhe7z/up7/ylXADgDgDMAOAOAMwA4A4AzADjnAKHu8/7q9/8VVwA4A4AzADgDgDMAOAOAMwC4cg7QfR6e7nMr6fN97H6i9/+e36L7U64AcAYAZwBwBgBnAHAGAGcAcPH3AZ5ur9H91T642qePnhOkz5ca/XyuAHAGAGcAcAYAZwBwBgBnAHDtvwuo9tnpnKBb93l/xRUAzgDgDADOAOAMAM4A4AwArn0OUEnnBOnrjzb6vL/iCgBnAHAGAGcAcAYAZwBwBgBX7kHT8/bH8zG5ffV+T1/R/c4B1MoA4AwAzgDgDADOAOAMAC7eg9LnBNUcoHufX3EFgDMAOAOAMwA4A4AzADgDgBu+R936nGDr5/0VVwA4A4AzADgDgDMAOAOAMwC49j1q95zgv+/zK64AcAYAZwBwBgBnAHAGAGcAcKvfw3b/H0C6z1/753cFgDMAOAOAMwA4A4AzADgDgPsDJ1tWqtGTMnUAAAAASUVORK5CYII='
+  };
 
   const GENERIQUE_PAGE_SIZE = 3;
   let generiquePage = 0;
@@ -5790,9 +5847,19 @@
 
       const circle = document.createElement('div');
       circle.className = 'generique-node-circle';
-      circle.textContent = isFinal
-        ? (isClaimed ? '🎬' : isAvailable ? '🎬' : '🔒')
-        : (isClaimed ? '✓' : isAvailable ? GENERIQUE_CATEGORY_ICON[tier.category] : '🔒');
+      const iconImg = document.createElement('img');
+      iconImg.className = 'generique-node-icon-img';
+      iconImg.alt = '';
+      if (isFinal){
+        iconImg.src = isClaimed || isAvailable ? GENERIQUE_NODE_ICONS.final : GENERIQUE_NODE_ICONS.lock;
+      } else if (isClaimed){
+        iconImg.src = GENERIQUE_NODE_ICONS.check;
+      } else if (isAvailable){
+        iconImg.src = GENERIQUE_NODE_ICONS[tier.category];
+      } else {
+        iconImg.src = GENERIQUE_NODE_ICONS.lock;
+      }
+      circle.appendChild(iconImg);
       node.appendChild(circle);
 
       const levelLabel = document.createElement('div');
@@ -5851,7 +5918,25 @@
 
       let d = '';
       points.forEach((p, i) => {
-        d += (i === 0 ? 'M ' : ' L ') + p.x.toFixed(1) + ' ' + p.y.toFixed(1);
+        if (i === 0){
+          d += 'M ' + p.x.toFixed(1) + ' ' + p.y.toFixed(1);
+          return;
+        }
+        const p0 = points[i - 1];
+        const p1 = p;
+        const dx = p1.x - p0.x;
+        const dy = p1.y - p0.y;
+        const len = Math.hypot(dx, dy) || 1;
+        // vecteur perpendiculaire au segment, pour faire onduler la courbe
+        // plutôt qu'un simple trait droit entre les deux points
+        const perpX = -dy / len;
+        const perpY = dx / len;
+        const wave = len * 0.55 * (i % 2 === 0 ? 1 : -1);
+        const c1x = p0.x + dx * 0.25 + perpX * wave;
+        const c1y = p0.y + dy * 0.25 + perpY * wave;
+        const c2x = p0.x + dx * 0.75 - perpX * wave;
+        const c2y = p0.y + dy * 0.75 - perpY * wave;
+        d += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`;
       });
 
       const path = document.createElementNS(svgNS, 'path');
