@@ -864,6 +864,14 @@
     display: inline-block;
     margin-right: 8px;
   }
+  .mode-icon-img{
+    width: 26px;
+    height: 26px;
+    object-fit: contain;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    vertical-align: middle;
+  }
   .mode-select-btn:hover .icon-clock{
     animation: chrono-tick .6s ease-in-out infinite;
   }
@@ -1842,6 +1850,48 @@
     max-width: 560px;
   }
 
+  .plans-points-label{
+    font-family:'Press Start 2P', monospace;
+    font-size: 0.55rem;
+    color: var(--yellow);
+  }
+  .plans-backdrop-wrap{
+    margin-bottom: 16px;
+  }
+  .plans-backdrop-img{
+    width:100%;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 2px solid var(--card-edge);
+    background: #0a0420;
+    display:block;
+    margin-bottom: 8px;
+  }
+  .carousel-nav{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+  }
+  .carousel-nav button{
+    font-size: 0.5rem;
+    padding: 7px 10px;
+  }
+  .carousel-nav button:disabled{ opacity:.3; cursor:default; }
+  .carousel-dots{ display:flex; gap:6px; }
+  .carousel-dot{
+    width:9px; height:9px; border-radius:50%;
+    background: var(--card-edge); border: 1px solid var(--muted);
+  }
+  .carousel-dot.active{ background: var(--cyan); border-color:var(--cyan); }
+  #plansAnswerForm .answer-row{
+    display:flex; gap: 8px;
+  }
+  #plansAnswerForm input{
+    flex:1;
+    background:#0a0420; border:2px solid var(--card-edge); border-radius: var(--radius);
+    color:var(--text); font-family:'VT323',monospace; font-size:1.1rem;
+    padding: 10px 12px;
+  }
+
   .ticket{
     background: var(--card);
     border-radius: var(--radius);
@@ -2210,6 +2260,115 @@
   .editor-panel-wide{
     max-width: 1180px;
   }
+
+  .editor-mode-buttons{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 20px;
+  }
+  .editor-mode-btn{
+    flex: 1 1 200px;
+    background: var(--card);
+    border: 3px solid var(--purple);
+    border-radius: var(--radius);
+    box-shadow: 0 0 10px rgba(176,38,255,.4), 6px 6px 0 rgba(176,38,255,.2);
+    padding: 22px 16px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transition: transform .12s ease;
+  }
+  .editor-mode-btn:hover{ transform: translateY(-3px); }
+  .editor-mode-btn-title{
+    font-family:'Press Start 2P', monospace;
+    font-size: 0.75rem;
+    color: var(--text);
+  }
+  .editor-mode-btn-sub{
+    font-family:'VT323', monospace;
+    font-size: 1rem;
+    color: var(--muted);
+  }
+  .editor-back-btn{
+    margin-bottom: 18px;
+  }
+
+  .plans-result-item, .plans-pool-item{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: var(--radius);
+    background: #140a28;
+    border: 1px solid var(--card-edge);
+    margin-bottom: 8px;
+  }
+  .plans-result-poster, .plans-pool-poster{
+    width: 40px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 3px;
+    flex-shrink: 0;
+    background: #05010c;
+  }
+  .plans-result-info, .plans-pool-info{
+    flex: 1;
+    min-width: 0;
+    font-size: 0.95rem;
+  }
+  .plans-result-title, .plans-pool-title{
+    font-family:'VT323', monospace;
+    font-size: 1.1rem;
+  }
+  .plans-result-year, .plans-pool-year{
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  .plans-result-item button, .plans-pool-item button{
+    flex-shrink:0;
+    font-size: 0.5rem;
+    padding: 6px 10px;
+  }
+  .plans-pool-backdrops-count{
+    font-size: 0.8rem;
+    color: var(--cyan);
+  }
+  .plans-backdrop-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+    margin: 14px 0;
+  }
+  .plans-backdrop-tile{
+    position: relative;
+    cursor: pointer;
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 3px solid var(--card-edge);
+    aspect-ratio: 16/9;
+  }
+  .plans-backdrop-tile img{
+    width:100%; height:100%; object-fit:cover; display:block;
+  }
+  .plans-backdrop-tile.selected{
+    border-color: var(--cyan);
+    box-shadow: 0 0 10px rgba(0,240,255,.6);
+  }
+  .plans-backdrop-order{
+    position: absolute;
+    top: 4px; left: 4px;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--cyan);
+    color: #05010c;
+    font-family:'Press Start 2P', monospace;
+    font-size: 0.7rem;
+    display:flex; align-items:center; justify-content:center;
+  }
+
   .editor-columns{
     display: flex;
     gap: 20px;
@@ -2535,6 +2694,7 @@
       <div class="mode-select-view" id="modeSelectView">
         <button type="button" class="mode-select-btn" id="chooseClassicBtn"><span class="mode-icon icon-clap">🎬</span><span class="mode-text typewriter">MODE CLASSIQUE</span></button>
         <button type="button" class="mode-select-btn" id="chooseRushBtn"><span class="mode-icon icon-clock">⏱</span><span class="mode-text">MODE RUSH</span></button>
+        <button type="button" class="mode-select-btn" id="choosePlansBtn"><span class="mode-icon"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALAAAACACAYAAACrzePzAAACOklEQVR4nO3csW1UQRRAURaZDETmfhABGZ3QB7k7ISNAFEEXZAgyAtMA8gRP49m7Oie1V3++dPWCp9G/vLq8fnwBUS9PHwAmBEyagEkTMGkCJk3ApAmYtLvVP3z9+fs5zgH/9eH+zZN/N4FJEzBpAiZNwKQJmDQBkyZg0gRMmoBJEzBpAiZNwKQJmDQBkyZg0pb3gadW9zm5bbvvk5vApAmYNAGTJmDSBEyagEkTMGnb98Arfx//XE6f4ZZNv/+82uOe3vObwKQJmDQBkyZg0gRMmoBJEzBpx/fAnDW9r3v6+9EmMGkCJk3ApAmYNAGTJmDSBEzacg/8+cdzHINTVvd53317es/7/f3s91MmMGkCJk3ApAmYNAGTJmDSBEya+8BXbvpdh6nVnvc0E5g0AZMmYNIETJqASRMwaQImLb8H3r0n3f394un5p/d1V1bvf3pPbQKTJmDSBEyagEkTMGkCJk3ApF39Hvj0nnT1/N170ul3FXa//2kmMGkCJk3ApAmYNAGTJmDSBEzaZbXne/vpy+gBvx4+jn6/Mj3fSv38U9P3392PCUyagEkTMGkCJk3ApAmYNAGTdvX3gU/vSVfPX+0pT59/avr+u5nApAmYNAGTJmDSBEyagEkTMGnb7wPDhPvA3DQBkyZg0gRMmoBJEzBpAiZNwKQJmDQBkyZg0gRMmoBJEzBpAiZNwKQJmDQBkyZg0gRMmoBJEzBpAiZt+V0IuGYmMGkCJk3ApAmYNAGTJmDSBEzaP/PPUua5wD45AAAAAElFTkSuQmCC" alt="" class="mode-icon-img"></span><span class="mode-text">MODE PLANS</span></button>
       </div>
 
       <div class="mode-panel hidden" id="classicModePanel">
@@ -2637,110 +2797,185 @@
   </section>
 
   <section class="editor-panel editor-panel-wide hidden" id="editorPanel" aria-label="Gestion des critiques personnalisées">
-    <div class="editor-columns">
 
-      <div class="editor-column">
-        <h2>AJOUTER UNE CRITIQUE</h2>
-        <p class="hint">Écris une critique assassine, propose 4 films possibles et coche le bon.</p>
+    <div id="editorModeSelector">
+      <h2>GERER</h2>
+      <p class="hint">Choisis ce que tu veux gérer.</p>
+      <div class="editor-mode-buttons">
+        <button type="button" class="editor-mode-btn" data-target="editorSectionClassique">
+          <span class="editor-mode-btn-title">🎬 CLASSIQUE &amp; RUSH</span>
+          <span class="editor-mode-btn-sub">Critiques et niveaux</span>
+        </button>
+        <button type="button" class="editor-mode-btn" data-target="editorSectionPlans">
+          <span class="editor-mode-btn-title">🖼 PLANS</span>
+          <span class="editor-mode-btn-sub">Films et plans</span>
+        </button>
+        <button type="button" class="editor-mode-btn" data-target="editorSectionGeneral">
+          <span class="editor-mode-btn-title">⚙ GENERAL</span>
+          <span class="editor-mode-btn-sub">Règles, Générique, sauvegarde</span>
+        </button>
+      </div>
+    </div>
 
-        <form id="reviewForm">
-          <div class="field">
-            <label for="reviewInput">La critique</label>
-            <textarea id="reviewInput" rows="3" placeholder="Ex : Un homme refuse de vieillir et embête tout un village avec une potion magique."></textarea>
+    <div id="editorSectionClassique" class="editor-section hidden">
+      <button type="button" class="ghost-btn editor-back-btn">← RETOUR</button>
+      <div class="editor-columns">
+
+        <div class="editor-column">
+          <h2>AJOUTER UNE CRITIQUE</h2>
+          <p class="hint">Écris une critique assassine, propose 4 films possibles et coche le bon.</p>
+
+          <form id="reviewForm">
+            <div class="field">
+              <label for="reviewInput">La critique</label>
+              <textarea id="reviewInput" rows="3" placeholder="Ex : Un homme refuse de vieillir et embête tout un village avec une potion magique."></textarea>
+            </div>
+
+            <div class="field">
+              <label for="answerField">Le titre du film (bonne réponse)</label>
+              <input type="text" id="answerField" placeholder="Ex : Astérix et Obélix : Mission Cléopâtre">
+            </div>
+
+            <div class="field">
+              <label for="answerYearField">Année de sortie (facultatif, évite les mauvaises affiches en cas de remake/homonyme)</label>
+              <input type="text" id="answerYearField" placeholder="Ex : 2002" inputmode="numeric" maxlength="4">
+            </div>
+
+            <div class="field">
+              <label for="aliasesField">Autres réponses acceptées (facultatif, séparées par des virgules)</label>
+              <input type="text" id="aliasesField" placeholder="Ex : Mission Cléopâtre, Astérix Mission Cléopâtre">
+            </div>
+
+            <div class="field">
+              <label for="levelSelect">Niveau</label>
+              <div class="option-fields" style="grid-template-columns: 1fr auto;">
+                <select id="levelSelect"></select>
+                <button type="button" class="ghost-btn" id="newLevelBtn">+ NOUVEAU NIVEAU</button>
+              </div>
+            </div>
+
+            <div class="editor-actions">
+              <button type="submit" class="primary-btn" id="submitBtn">AJOUTER</button>
+              <button type="button" class="ghost-btn hidden" id="cancelEditBtn">ANNULER</button>
+            </div>
+            <div class="editor-form-msg" id="formMsg"></div>
+          </form>
+        </div>
+
+        <div class="editor-column">
+          <div class="custom-list">
+            <h3>MODIFIER LES CRITIQUES</h3>
+            <p class="hint">Toutes les critiques du quiz — les tiennes et celles d'origine. Clique sur MODIF. pour changer le texte, les propositions ou la bonne réponse.</p>
+            <div id="customListBody"></div>
           </div>
+        </div>
 
-          <div class="field">
-            <label for="answerField">Le titre du film (bonne réponse)</label>
-            <input type="text" id="answerField" placeholder="Ex : Astérix et Obélix : Mission Cléopâtre">
+        <div class="editor-column">
+          <div class="custom-list">
+            <h3>GERER LES NIVEAUX</h3>
+            <p class="hint">Image (URL) et animation de clic pour chaque niveau. Le mode (Classique/Rush) se choisit ici aussi.</p>
+            <div id="levelManageList"></div>
           </div>
+        </div>
 
-          <div class="field">
-            <label for="answerYearField">Année de sortie (facultatif, évite les mauvaises affiches en cas de remake/homonyme)</label>
-            <input type="text" id="answerYearField" placeholder="Ex : 2002" inputmode="numeric" maxlength="4">
-          </div>
+      </div>
+    </div>
 
-          <div class="field">
-            <label for="aliasesField">Autres réponses acceptées (facultatif, séparées par des virgules)</label>
-            <input type="text" id="aliasesField" placeholder="Ex : Mission Cléopâtre, Astérix Mission Cléopâtre">
-          </div>
+    <div id="editorSectionPlans" class="editor-section hidden">
+      <button type="button" class="ghost-btn editor-back-btn">← RETOUR</button>
+      <div class="editor-columns">
 
-          <div class="field">
-            <label for="levelSelect">Niveau</label>
-            <div class="option-fields" style="grid-template-columns: 1fr auto;">
-              <select id="levelSelect"></select>
-              <button type="button" class="ghost-btn" id="newLevelBtn">+ NOUVEAU NIVEAU</button>
+        <div class="editor-column">
+          <div class="custom-list">
+            <h3>MODE PLANS — FILMS</h3>
+            <p class="hint">Cherche un film sur TMDb, puis choisis toi-même 3 plans parmi ceux disponibles.</p>
+            <div class="field">
+              <label for="plansSearchField">Titre du film</label>
+              <input type="text" id="plansSearchField" placeholder="Ex : Retour vers le futur">
+            </div>
+            <button type="button" class="ghost-btn" id="plansSearchBtn">🔍 RECHERCHER</button>
+            <div id="plansSearchResults"></div>
+            <div class="editor-form-msg" id="plansSearchMsg"></div>
+
+            <div id="plansBackdropPicker" class="hidden">
+              <p class="hint" id="plansBackdropPickerTitle"></p>
+              <p class="hint" style="color: var(--yellow);">Clique 3 plans, dans l'ordre où tu veux qu'ils apparaissent (1ᵉʳ = affiché seul, 2ᵉ = affiché avec le 1ᵉʳ, 3ᵉ = affiché avec les deux autres).</p>
+              <div class="plans-backdrop-grid" id="plansBackdropGrid"></div>
+              <div class="editor-actions">
+                <button type="button" class="primary-btn" id="plansConfirmSelectionBtn" disabled>VALIDER LA SELECTION (0/3)</button>
+                <button type="button" class="ghost-btn" id="plansCancelSelectionBtn">ANNULER</button>
+              </div>
             </div>
           </div>
-
-          <div class="editor-actions">
-            <button type="submit" class="primary-btn" id="submitBtn">AJOUTER</button>
-            <button type="button" class="ghost-btn hidden" id="cancelEditBtn">ANNULER</button>
-          </div>
-          <div class="editor-form-msg" id="formMsg"></div>
-        </form>
-      </div>
-
-      <div class="editor-column">
-        <div class="custom-list">
-          <h3>MODIFIER LES CRITIQUES</h3>
-          <p class="hint">Toutes les critiques du quiz — les tiennes et celles d'origine. Clique sur MODIF. pour changer le texte, les propositions ou la bonne réponse.</p>
-          <div id="customListBody"></div>
         </div>
-      </div>
 
-      <div class="editor-column">
-        <div class="custom-list">
-          <h3>GERER LES NIVEAUX</h3>
-          <p class="hint">Image (URL) et animation de clic pour chaque niveau.</p>
-          <div id="levelManageList"></div>
+        <div class="editor-column">
+          <div class="custom-list">
+            <h3>FILMS DEJA AJOUTES (<span id="plansPoolCount">0</span>)</h3>
+            <div id="plansPoolList"></div>
+          </div>
         </div>
-      </div>
 
-      <div class="editor-column">
-        <div class="custom-list">
-          <h3>REGLES DU JEU</h3>
-          <p class="hint">Décide si les règles s'affichent pour les joueurs, et personnalise leur texte selon le mode.</p>
-          <div class="field">
-            <label for="rulesEnabledToggle">Affichage aux joueurs</label>
-            <select id="rulesEnabledToggle">
-              <option value="off">Masquées (aucune règle affichée)</option>
-              <option value="on">Affichées avant de jouer</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="rulesClassicField">Texte — Mode Classique</label>
-            <textarea id="rulesClassicField" rows="4" placeholder="Règles affichées avant d'entrer dans le sous-menu Classique..."></textarea>
-          </div>
-          <div class="field">
-            <label for="rulesRushField">Texte — Mode Rush</label>
-            <textarea id="rulesRushField" rows="4" placeholder="Règles affichées avant d'entrer dans le sous-menu Rush..."></textarea>
-          </div>
-          <button type="button" class="primary-btn" id="saveRulesBtn">ENREGISTRER LES REGLES</button>
-          <div class="editor-form-msg" id="rulesFormMsg"></div>
-        </div>
       </div>
-
-      <div class="editor-column">
-        <div class="custom-list">
-          <h3>GENERIQUE — JOUEUR</h3>
-          <p class="hint">Donne assez d'XP à un joueur pour que tous les paliers du Générique deviennent disponibles. Il devra quand même cliquer sur "RECLAMER" lui-même pour chacun.</p>
-          <div class="field">
-            <label for="adminGeneriquePseudoField">Pseudo du joueur</label>
-            <input type="text" id="adminGeneriquePseudoField" placeholder="Ex : LaBobine">
-          </div>
-          <button type="button" class="primary-btn" id="adminUnlockGeneriqueBtn">TOUT RENDRE DISPONIBLE</button>
-          <div class="editor-form-msg" id="adminGeneriqueMsg"></div>
-        </div>
-      </div>
-
     </div>
 
-    <div class="import-export-row">
-      <button class="ghost-btn" id="exportBtn">⭳ EXPORTER</button>
-      <button class="ghost-btn" id="importBtn">⭱ IMPORTER</button>
-      <button class="ghost-btn" id="resetBtn">↺ REINITIALISER</button>
-      <input type="file" id="importInput" accept="application/json">
+    <div id="editorSectionGeneral" class="editor-section hidden">
+      <button type="button" class="ghost-btn editor-back-btn">← RETOUR</button>
+      <div class="editor-columns">
+
+        <div class="editor-column">
+          <div class="custom-list">
+            <h3>REGLES DU JEU</h3>
+            <p class="hint">Décide si les règles s'affichent pour les joueurs, et personnalise leur texte selon le mode.</p>
+            <div class="field">
+              <label for="rulesEnabledToggle">Affichage aux joueurs</label>
+              <select id="rulesEnabledToggle">
+                <option value="off">Masquées (aucune règle affichée)</option>
+                <option value="on">Affichées avant de jouer</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="rulesClassicField">Texte — Mode Classique</label>
+              <textarea id="rulesClassicField" rows="4" placeholder="Règles affichées avant d'entrer dans le sous-menu Classique..."></textarea>
+            </div>
+            <div class="field">
+              <label for="rulesRushField">Texte — Mode Rush</label>
+              <textarea id="rulesRushField" rows="4" placeholder="Règles affichées avant d'entrer dans le sous-menu Rush..."></textarea>
+            </div>
+            <button type="button" class="primary-btn" id="saveRulesBtn">ENREGISTRER LES REGLES</button>
+            <div class="editor-form-msg" id="rulesFormMsg"></div>
+          </div>
+        </div>
+
+        <div class="editor-column">
+          <div class="custom-list">
+            <h3>GENERIQUE — JOUEUR</h3>
+            <p class="hint">Donne assez d'XP à un joueur pour que tous les paliers du Générique deviennent disponibles. Il devra quand même cliquer sur "RECLAMER" lui-même pour chacun.</p>
+            <div class="field">
+              <label for="adminGeneriquePseudoField">Pseudo du joueur</label>
+              <input type="text" id="adminGeneriquePseudoField" placeholder="Ex : LaBobine">
+            </div>
+            <button type="button" class="primary-btn" id="adminUnlockGeneriqueBtn">TOUT RENDRE DISPONIBLE</button>
+            <div class="editor-form-msg" id="adminGeneriqueMsg"></div>
+          </div>
+        </div>
+
+        <div class="editor-column">
+          <div class="custom-list">
+            <h3>SAUVEGARDE</h3>
+            <p class="hint">Exporte/importe l'ensemble des critiques, ou réinitialise tout.</p>
+            <div class="import-export-row">
+              <button class="ghost-btn" id="exportBtn">⭳ EXPORTER</button>
+              <button class="ghost-btn" id="importBtn">⭱ IMPORTER</button>
+              <button class="ghost-btn" id="resetBtn">↺ REINITIALISER</button>
+              <input type="file" id="importInput" accept="application/json">
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
+
   </section>
 
   <div class="game-area hidden" id="gameArea">
@@ -2806,6 +3041,35 @@
 
       <div class="final-summary" id="finalSummary"></div>
       <button class="replay-btn" id="replayBtn">REJOUER</button>
+    </div>
+
+    <div class="ticket hidden" id="plansGameCard">
+      <div class="ticket-label">
+        <span id="plansCounter">FILM 1 / 10</span>
+        <span id="plansPointsLabel" class="plans-points-label">5 POINTS SI BONNE REPONSE</span>
+      </div>
+      <div class="plans-backdrop-wrap">
+        <img id="plansBackdropImg" src="" alt="" class="plans-backdrop-img">
+        <div class="carousel-nav">
+          <button type="button" class="ghost-btn" id="plansPrevBtn">◀ PRECEDENT</button>
+          <div class="carousel-dots" id="plansCarouselDots"></div>
+          <button type="button" class="ghost-btn" id="plansNextBtn">SUIVANT ▶</button>
+        </div>
+      </div>
+      <form id="plansAnswerForm">
+        <div class="answer-row">
+          <input type="text" id="plansAnswerInput" placeholder="Quel est ce film ?" autocomplete="off">
+          <button type="submit" class="answer-submit-btn" id="plansAnswerSubmitBtn">VALIDER</button>
+        </div>
+      </form>
+      <div class="feedback-zone" id="plansFeedback"></div>
+    </div>
+
+    <div class="ticket result hidden" id="plansResultCard">
+      <div class="ticket-label"><span>PARTIE TERMINEE</span></div>
+      <div class="score-line" id="plansResultScore"></div>
+      <button class="replay-btn" id="plansReplayBtn">REJOUER</button>
+      <button class="ghost-btn" id="plansBackToMenuBtn" style="margin-top:10px; width:100%;">RETOUR AU MENU</button>
     </div>
   </div>
 
@@ -3828,6 +4092,22 @@
   const modeSelectView = document.getElementById('modeSelectView');
   const chooseClassicBtn = document.getElementById('chooseClassicBtn');
   const chooseRushBtn = document.getElementById('chooseRushBtn');
+  const choosePlansBtn = document.getElementById('choosePlansBtn');
+  const plansGameCard = document.getElementById('plansGameCard');
+  const plansResultCard = document.getElementById('plansResultCard');
+  const plansCounter = document.getElementById('plansCounter');
+  const plansPointsLabel = document.getElementById('plansPointsLabel');
+  const plansBackdropImg = document.getElementById('plansBackdropImg');
+  const plansPrevBtn = document.getElementById('plansPrevBtn');
+  const plansNextBtn = document.getElementById('plansNextBtn');
+  const plansCarouselDots = document.getElementById('plansCarouselDots');
+  const plansAnswerForm = document.getElementById('plansAnswerForm');
+  const plansAnswerInput = document.getElementById('plansAnswerInput');
+  const plansAnswerSubmitBtn = document.getElementById('plansAnswerSubmitBtn');
+  const plansFeedback = document.getElementById('plansFeedback');
+  const plansResultScore = document.getElementById('plansResultScore');
+  const plansReplayBtn = document.getElementById('plansReplayBtn');
+  const plansBackToMenuBtn = document.getElementById('plansBackToMenuBtn');
   const backFromClassicBtn = document.getElementById('backFromClassicBtn');
   const backFromRushBtn = document.getElementById('backFromRushBtn');
   const levelScreenHint = document.getElementById('levelScreenHint');
@@ -6002,6 +6282,388 @@
     }, 4000);
   });
 
+  // ---------- Mode Plans : sélection de films (admin) ----------
+  let plansPool = [];
+
+  async function loadPlansPoolFromCloud(){
+    if (!firebaseReady) return;
+    try {
+      const doc = await withTimeout(db.collection('config').doc('plansMovies').get());
+      plansPool = (doc.exists && doc.data().movies) || [];
+    } catch (err){
+      plansPool = [];
+    }
+    renderPlansPoolList();
+  }
+
+  async function savePlansPoolToCloud(){
+    if (!firebaseReady) return;
+    try {
+      await db.collection('config').doc('plansMovies').set({ movies: plansPool });
+    } catch (err){
+      // échec silencieux : la liste reste correcte localement pour cette session
+    }
+  }
+
+  function renderPlansPoolList(){
+    plansPoolCount.textContent = plansPool.length;
+    plansPoolList.innerHTML = '';
+    if (plansPool.length === 0){
+      plansPoolList.innerHTML = '<p class="empty-note">Aucun film ajouté pour l\'instant.</p>';
+      return;
+    }
+    plansPool.forEach((movie, idx) => {
+      const row = document.createElement('div');
+      row.className = 'plans-pool-item';
+      const poster = document.createElement('img');
+      poster.className = 'plans-pool-poster';
+      poster.src = movie.posterUrl || '';
+      poster.alt = '';
+      const info = document.createElement('div');
+      info.className = 'plans-pool-info';
+      const title = document.createElement('p');
+      title.className = 'plans-pool-title';
+      title.textContent = movie.title;
+      const meta = document.createElement('p');
+      meta.className = 'plans-pool-year';
+      meta.textContent = (movie.year || '?') + ' — ';
+      const backdropCount = document.createElement('span');
+      backdropCount.className = 'plans-pool-backdrops-count';
+      backdropCount.textContent = `${movie.backdrops.length} plan${movie.backdrops.length > 1 ? 's' : ''}`;
+      meta.appendChild(backdropCount);
+      info.appendChild(title);
+      info.appendChild(meta);
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'ghost-btn';
+      removeBtn.textContent = 'RETIRER';
+      removeBtn.addEventListener('click', async () => {
+        plansPool.splice(idx, 1);
+        await savePlansPoolToCloud();
+        renderPlansPoolList();
+      });
+      row.appendChild(poster);
+      row.appendChild(info);
+      row.appendChild(removeBtn);
+      plansPoolList.appendChild(row);
+    });
+  }
+
+  plansSearchBtn.addEventListener('click', async () => {
+    const query = plansSearchField.value.trim();
+    plansSearchResults.innerHTML = '';
+    plansSearchMsg.textContent = '';
+    if (!query){
+      plansSearchMsg.textContent = 'Tape un titre de film.';
+      plansSearchMsg.className = 'editor-form-msg error';
+      return;
+    }
+    if (!tmdbReady){
+      plansSearchMsg.textContent = 'TMDb indisponible pour le moment.';
+      plansSearchMsg.className = 'editor-form-msg error';
+      return;
+    }
+    plansSearchMsg.textContent = 'Recherche en cours...';
+    plansSearchMsg.className = 'editor-form-msg';
+    try {
+      const res = await withTimeout(fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&language=fr-FR&query=${encodeURIComponent(query)}`));
+      const data = await res.json();
+      plansSearchMsg.textContent = '';
+      const results = (data.results || []).slice(0, 8);
+      if (results.length === 0){
+        plansSearchMsg.textContent = 'Aucun résultat.';
+        return;
+      }
+      results.forEach(movie => {
+        const alreadyAdded = plansPool.some(m => m.id === movie.id);
+        const row = document.createElement('div');
+        row.className = 'plans-result-item';
+        const poster = document.createElement('img');
+        poster.className = 'plans-result-poster';
+        poster.src = movie.poster_path ? `https://image.tmdb.org/t/p/w92${movie.poster_path}` : '';
+        poster.alt = '';
+        const info = document.createElement('div');
+        info.className = 'plans-result-info';
+        const title = document.createElement('p');
+        title.className = 'plans-result-title';
+        title.textContent = movie.title;
+        const year = document.createElement('p');
+        year.className = 'plans-result-year';
+        year.textContent = movie.release_date ? movie.release_date.slice(0, 4) : 'Année inconnue';
+        info.appendChild(title);
+        info.appendChild(year);
+        const addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'primary-btn';
+        if (alreadyAdded){
+          addBtn.textContent = '✓ AJOUTE';
+          addBtn.disabled = true;
+        } else {
+          addBtn.textContent = 'CHOISIR LES PLANS';
+          addBtn.addEventListener('click', () => openBackdropPicker(movie, addBtn));
+        }
+        row.appendChild(poster);
+        row.appendChild(info);
+        row.appendChild(addBtn);
+        plansSearchResults.appendChild(row);
+      });
+    } catch (err){
+      plansSearchMsg.textContent = 'Erreur de recherche, réessaie.';
+      plansSearchMsg.className = 'editor-form-msg error';
+    }
+  });
+
+  let plansSelectedBackdrops = [];
+  let plansPickerMovie = null;
+  let plansPickerBtnEl = null;
+
+  async function openBackdropPicker(movie, btnEl){
+    plansPickerMovie = movie;
+    plansPickerBtnEl = btnEl;
+    plansSelectedBackdrops = [];
+    btnEl.disabled = true;
+    btnEl.textContent = '...';
+    plansSearchMsg.textContent = '';
+
+    try {
+      const res = await withTimeout(fetch(`https://api.themoviedb.org/3/movie/${movie.id}/images?api_key=${TMDB_API_KEY}`));
+      const data = await res.json();
+      const backdrops = (data.backdrops || [])
+        .filter(b => b.iso_639_1 === null)
+        .sort((a, b) => (b.vote_average - a.vote_average) || (b.width - a.width))
+        .slice(0, 15)
+        .map(b => `https://image.tmdb.org/t/p/w500${b.file_path}`);
+
+      if (backdrops.length < 3){
+        plansSearchMsg.textContent = `"${movie.title}" n'a pas assez de plans disponibles (${backdrops.length}/3) — impossible de continuer.`;
+        plansSearchMsg.className = 'editor-form-msg error';
+        btnEl.disabled = false;
+        btnEl.textContent = 'CHOISIR LES PLANS';
+        return;
+      }
+
+      plansBackdropPickerTitle.textContent = `Plans disponibles pour "${movie.title}" :`;
+      plansBackdropGrid.innerHTML = '';
+      backdrops.forEach(url => {
+        const tile = document.createElement('div');
+        tile.className = 'plans-backdrop-tile';
+        tile.dataset.url = url;
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = '';
+        tile.appendChild(img);
+        tile.addEventListener('click', () => toggleBackdropSelection(tile, url));
+        plansBackdropGrid.appendChild(tile);
+      });
+      updatePlansConfirmBtn();
+      plansBackdropPicker.classList.remove('hidden');
+      plansBackdropPicker.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } catch (err){
+      plansSearchMsg.textContent = "Erreur lors de la récupération des plans, réessaie.";
+      plansSearchMsg.className = 'editor-form-msg error';
+      btnEl.disabled = false;
+      btnEl.textContent = 'CHOISIR LES PLANS';
+    }
+  }
+
+  function toggleBackdropSelection(tile, url){
+    const idx = plansSelectedBackdrops.indexOf(url);
+    if (idx !== -1){
+      plansSelectedBackdrops.splice(idx, 1);
+    } else {
+      if (plansSelectedBackdrops.length >= 3) return;
+      plansSelectedBackdrops.push(url);
+    }
+    refreshBackdropGridOrder();
+    updatePlansConfirmBtn();
+  }
+
+  function refreshBackdropGridOrder(){
+    plansBackdropGrid.querySelectorAll('.plans-backdrop-tile').forEach(tile => {
+      const url = tile.dataset.url;
+      const orderIdx = plansSelectedBackdrops.indexOf(url);
+      tile.classList.toggle('selected', orderIdx !== -1);
+      const existingBadge = tile.querySelector('.plans-backdrop-order');
+      if (existingBadge) existingBadge.remove();
+      if (orderIdx !== -1){
+        const badge = document.createElement('div');
+        badge.className = 'plans-backdrop-order';
+        badge.textContent = orderIdx + 1;
+        tile.appendChild(badge);
+      }
+    });
+  }
+
+  function updatePlansConfirmBtn(){
+    const n = plansSelectedBackdrops.length;
+    plansConfirmSelectionBtn.textContent = `VALIDER LA SELECTION (${n}/3)`;
+    plansConfirmSelectionBtn.disabled = n !== 3;
+  }
+
+  plansConfirmSelectionBtn.addEventListener('click', async () => {
+    if (plansSelectedBackdrops.length !== 3 || !plansPickerMovie) return;
+    const movie = plansPickerMovie;
+    plansPool.push({
+      id: movie.id,
+      title: movie.title,
+      year: movie.release_date ? parseInt(movie.release_date.slice(0, 4), 10) : null,
+      posterUrl: movie.poster_path ? `https://image.tmdb.org/t/p/w92${movie.poster_path}` : '',
+      backdrops: plansSelectedBackdrops.slice()
+    });
+    await savePlansPoolToCloud();
+    renderPlansPoolList();
+    if (plansPickerBtnEl){
+      plansPickerBtnEl.textContent = '✓ AJOUTE';
+    }
+    closeBackdropPicker();
+  });
+
+  plansCancelSelectionBtn.addEventListener('click', () => {
+    if (plansPickerBtnEl){
+      plansPickerBtnEl.disabled = false;
+      plansPickerBtnEl.textContent = 'CHOISIR LES PLANS';
+    }
+    closeBackdropPicker();
+  });
+
+  function closeBackdropPicker(){
+    plansBackdropPicker.classList.add('hidden');
+    plansBackdropGrid.innerHTML = '';
+    plansSelectedBackdrops = [];
+    plansPickerMovie = null;
+    plansPickerBtnEl = null;
+  }
+
+  // ---------- Mode Plans : déroulé de la partie ----------
+  const PLANS_SESSION_SIZE = 10;
+  const PLANS_POINTS = { 1: 5, 2: 3, 3: 1 };
+  let plansSessionMovies = [];
+  let plansCurrentIndex = 0;
+  let plansCurrentAttempt = 1;
+  let plansCarouselIndex = 0;
+  let plansSessionScore = 0;
+
+  async function startPlansSession(){
+    settingsDropdown.classList.add('hidden');
+    await loadPlansPoolFromCloud();
+    if (plansPool.length < 3){
+      alert("Pas assez de films disponibles dans le mode Plans pour l'instant — réessaie plus tard.");
+      return;
+    }
+    currentLevel = null; // ce mode n'a pas de "niveau" au sens Classique/Rush
+    const shuffled = plansPool.slice().sort(() => Math.random() - 0.5);
+    plansSessionMovies = shuffled.slice(0, Math.min(PLANS_SESSION_SIZE, shuffled.length));
+    plansCurrentIndex = 0;
+    plansSessionScore = 0;
+
+    levelScreen.classList.add('hidden');
+    rulesScreen.classList.add('hidden');
+    gameArea.classList.remove('hidden');
+    quizCard.classList.add('hidden');
+    resultCard.classList.add('hidden');
+    plansResultCard.classList.add('hidden');
+    plansGameCard.classList.remove('hidden');
+    updateTopBarVisibility();
+    applyGenreDecor();
+    renderPlansQuestion();
+  }
+
+  function renderPlansQuestion(){
+    plansCurrentAttempt = 1;
+    plansCarouselIndex = 0;
+    plansFeedback.textContent = '';
+    plansAnswerInput.value = '';
+    plansAnswerInput.disabled = false;
+    plansAnswerSubmitBtn.disabled = false;
+    plansCounter.textContent = `FILM ${plansCurrentIndex + 1} / ${plansSessionMovies.length}`;
+    renderPlansAttemptView();
+    if (!isTouchDevice) plansAnswerInput.focus();
+  }
+
+  function renderPlansAttemptView(){
+    const movie = plansSessionMovies[plansCurrentIndex];
+    const revealedCount = plansCurrentAttempt;
+    const pts = PLANS_POINTS[plansCurrentAttempt];
+    plansPointsLabel.textContent = `${pts} POINT${pts > 1 ? 'S' : ''} SI BONNE REPONSE`;
+    if (plansCarouselIndex > revealedCount - 1) plansCarouselIndex = revealedCount - 1;
+    plansBackdropImg.src = movie.backdrops[plansCarouselIndex];
+    plansPrevBtn.disabled = plansCarouselIndex === 0;
+    plansNextBtn.disabled = plansCarouselIndex === revealedCount - 1;
+    plansCarouselDots.innerHTML = '';
+    for (let i = 0; i < revealedCount; i++){
+      const dot = document.createElement('span');
+      dot.className = 'carousel-dot' + (i === plansCarouselIndex ? ' active' : '');
+      plansCarouselDots.appendChild(dot);
+    }
+  }
+
+  plansPrevBtn.addEventListener('click', () => {
+    if (plansCarouselIndex > 0){
+      plansCarouselIndex--;
+      renderPlansAttemptView();
+    }
+  });
+  plansNextBtn.addEventListener('click', () => {
+    if (plansCarouselIndex < plansCurrentAttempt - 1){
+      plansCarouselIndex++;
+      renderPlansAttemptView();
+    }
+  });
+
+  plansAnswerForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (plansAnswerInput.disabled) return;
+    const movie = plansSessionMovies[plansCurrentIndex];
+    const correct = isGuessCorrect(plansAnswerInput.value, { answer: movie.title, aliases: [] });
+    plansAnswerInput.disabled = true;
+    plansAnswerSubmitBtn.disabled = true;
+
+    if (correct){
+      const pts = PLANS_POINTS[plansCurrentAttempt];
+      plansSessionScore += pts;
+      plansFeedback.textContent = `BONNE REPONSE ! +${pts} point${pts > 1 ? 's' : ''}`;
+      await playCorrectSound();
+      setTimeout(advancePlansFilm, 1300);
+    } else if (plansCurrentAttempt < 3){
+      await playWrongSound();
+      plansCurrentAttempt++;
+      plansFeedback.textContent = 'Raté... plan suivant.';
+      plansAnswerInput.value = '';
+      plansAnswerInput.disabled = false;
+      plansAnswerSubmitBtn.disabled = false;
+      plansCarouselIndex = plansCurrentAttempt - 1;
+      renderPlansAttemptView();
+      if (!isTouchDevice) plansAnswerInput.focus();
+    } else {
+      await playWrongSound();
+      plansFeedback.textContent = `C'était "${movie.title}" !`;
+      setTimeout(advancePlansFilm, 1700);
+    }
+  });
+
+  function advancePlansFilm(){
+    plansCurrentIndex++;
+    if (plansCurrentIndex >= plansSessionMovies.length){
+      endPlansSession();
+    } else {
+      renderPlansQuestion();
+    }
+  }
+
+  function endPlansSession(){
+    plansGameCard.classList.add('hidden');
+    plansResultCard.classList.remove('hidden');
+    const maxScore = plansSessionMovies.length * 5;
+    plansResultScore.textContent = `Score final : ${plansSessionScore} / ${maxScore} points`;
+  }
+
+  plansReplayBtn.addEventListener('click', startPlansSession);
+  plansBackToMenuBtn.addEventListener('click', () => {
+    plansResultCard.classList.add('hidden');
+    goBackToLevelSelect();
+  });
+  choosePlansBtn.addEventListener('click', startPlansSession);
+
   async function playCorrectSound(){
     if (!sfxEnabled) return;
     await initAudio();
@@ -6139,6 +6801,40 @@
 
   const editorToggle = document.getElementById('editorToggle');
   const editorPanel = document.getElementById('editorPanel');
+  const editorModeSelector = document.getElementById('editorModeSelector');
+  const editorModeBtns = document.querySelectorAll('.editor-mode-btn');
+  const editorSections = document.querySelectorAll('.editor-section');
+  const editorBackBtns = document.querySelectorAll('.editor-back-btn');
+  const plansSearchField = document.getElementById('plansSearchField');
+  const plansSearchBtn = document.getElementById('plansSearchBtn');
+  const plansSearchResults = document.getElementById('plansSearchResults');
+  const plansSearchMsg = document.getElementById('plansSearchMsg');
+  const plansPoolList = document.getElementById('plansPoolList');
+  const plansPoolCount = document.getElementById('plansPoolCount');
+  const plansBackdropPicker = document.getElementById('plansBackdropPicker');
+  const plansBackdropPickerTitle = document.getElementById('plansBackdropPickerTitle');
+  const plansBackdropGrid = document.getElementById('plansBackdropGrid');
+  const plansConfirmSelectionBtn = document.getElementById('plansConfirmSelectionBtn');
+  const plansCancelSelectionBtn = document.getElementById('plansCancelSelectionBtn');
+
+  function showEditorSection(targetId){
+    editorModeSelector.classList.add('hidden');
+    editorSections.forEach(sec => sec.classList.toggle('hidden', sec.id !== targetId));
+  }
+  function showEditorModeSelector(){
+    editorSections.forEach(sec => sec.classList.add('hidden'));
+    editorModeSelector.classList.remove('hidden');
+  }
+  editorModeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      showEditorSection(btn.dataset.target);
+      if (btn.dataset.target === 'editorSectionPlans') loadPlansPoolFromCloud();
+    });
+  });
+  editorBackBtns.forEach(btn => {
+    btn.addEventListener('click', showEditorModeSelector);
+  });
+
 
   // Affichage exclusif des écrans/panneaux : ouvrir un menu (profil, admin,
   // générique...) remplace ce qui est affiché plutôt que de s'empiler en
@@ -6715,6 +7411,7 @@
     settingsDropdown.classList.add('hidden');
     const willShow = editorPanel.classList.contains('hidden');
     if (willShow){
+      showEditorModeSelector();
       openPanel(editorPanel);
     } else {
       closePanelAndRestore();
