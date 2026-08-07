@@ -532,6 +532,24 @@
     .marquee-frame{ padding: 16px 18px; }
   }
 
+  .beta-chip{
+    position: absolute;
+    top: -14px;
+    right: -14px;
+    font-family:'Press Start 2P', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    color: var(--bg-deep);
+    background: var(--yellow);
+    padding: 7px 12px;
+    border-radius: 20px;
+    box-shadow: 0 0 10px rgba(249,240,2,.65), 2px 2px 0 rgba(0,0,0,.4);
+    white-space: nowrap;
+    cursor: help;
+    transform: rotate(12deg);
+    z-index: 5;
+  }
+
   h1.title{
     font-family:'Press Start 2P', monospace;
     font-size: clamp(1.4rem, 5.5vw, 2.4rem);
@@ -2436,6 +2454,7 @@
   <div class="marquee">
     <div class="marquee-frame">
       <h1 class="title">CINETOILE</h1>
+      <span class="beta-chip" id="betaChip" title="Version bêta — certaines fonctionnalités peuvent encore changer">BETA</span>
     </div>
     <p class="subtitle">&gt; DEVINE LE FILM DERRIERE LA CRITIQUE LA PLUS ASSASSINE_</p>
   </div>
