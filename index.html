@@ -4094,6 +4094,42 @@
   const chooseRushBtn = document.getElementById('chooseRushBtn');
   const choosePlansBtn = document.getElementById('choosePlansBtn');
   const plansGameCard = document.getElementById('plansGameCard');
+
+  const editorToggle = document.getElementById('editorToggle');
+  const editorPanel = document.getElementById('editorPanel');
+  const editorModeSelector = document.getElementById('editorModeSelector');
+  const editorModeBtns = document.querySelectorAll('.editor-mode-btn');
+  const editorSections = document.querySelectorAll('.editor-section');
+  const editorBackBtns = document.querySelectorAll('.editor-back-btn');
+  const plansSearchField = document.getElementById('plansSearchField');
+  const plansSearchBtn = document.getElementById('plansSearchBtn');
+  const plansSearchResults = document.getElementById('plansSearchResults');
+  const plansSearchMsg = document.getElementById('plansSearchMsg');
+  const plansPoolList = document.getElementById('plansPoolList');
+  const plansPoolCount = document.getElementById('plansPoolCount');
+  const plansBackdropPicker = document.getElementById('plansBackdropPicker');
+  const plansBackdropPickerTitle = document.getElementById('plansBackdropPickerTitle');
+  const plansBackdropGrid = document.getElementById('plansBackdropGrid');
+  const plansConfirmSelectionBtn = document.getElementById('plansConfirmSelectionBtn');
+  const plansCancelSelectionBtn = document.getElementById('plansCancelSelectionBtn');
+
+  function showEditorSection(targetId){
+    editorModeSelector.classList.add('hidden');
+    editorSections.forEach(sec => sec.classList.toggle('hidden', sec.id !== targetId));
+  }
+  function showEditorModeSelector(){
+    editorSections.forEach(sec => sec.classList.add('hidden'));
+    editorModeSelector.classList.remove('hidden');
+  }
+  editorModeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      showEditorSection(btn.dataset.target);
+      if (btn.dataset.target === 'editorSectionPlans') loadPlansPoolFromCloud();
+    });
+  });
+  editorBackBtns.forEach(btn => {
+    btn.addEventListener('click', showEditorModeSelector);
+  });
   const plansResultCard = document.getElementById('plansResultCard');
   const plansCounter = document.getElementById('plansCounter');
   const plansPointsLabel = document.getElementById('plansPointsLabel');
@@ -6799,41 +6835,6 @@
   }
 
 
-  const editorToggle = document.getElementById('editorToggle');
-  const editorPanel = document.getElementById('editorPanel');
-  const editorModeSelector = document.getElementById('editorModeSelector');
-  const editorModeBtns = document.querySelectorAll('.editor-mode-btn');
-  const editorSections = document.querySelectorAll('.editor-section');
-  const editorBackBtns = document.querySelectorAll('.editor-back-btn');
-  const plansSearchField = document.getElementById('plansSearchField');
-  const plansSearchBtn = document.getElementById('plansSearchBtn');
-  const plansSearchResults = document.getElementById('plansSearchResults');
-  const plansSearchMsg = document.getElementById('plansSearchMsg');
-  const plansPoolList = document.getElementById('plansPoolList');
-  const plansPoolCount = document.getElementById('plansPoolCount');
-  const plansBackdropPicker = document.getElementById('plansBackdropPicker');
-  const plansBackdropPickerTitle = document.getElementById('plansBackdropPickerTitle');
-  const plansBackdropGrid = document.getElementById('plansBackdropGrid');
-  const plansConfirmSelectionBtn = document.getElementById('plansConfirmSelectionBtn');
-  const plansCancelSelectionBtn = document.getElementById('plansCancelSelectionBtn');
-
-  function showEditorSection(targetId){
-    editorModeSelector.classList.add('hidden');
-    editorSections.forEach(sec => sec.classList.toggle('hidden', sec.id !== targetId));
-  }
-  function showEditorModeSelector(){
-    editorSections.forEach(sec => sec.classList.add('hidden'));
-    editorModeSelector.classList.remove('hidden');
-  }
-  editorModeBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      showEditorSection(btn.dataset.target);
-      if (btn.dataset.target === 'editorSectionPlans') loadPlansPoolFromCloud();
-    });
-  });
-  editorBackBtns.forEach(btn => {
-    btn.addEventListener('click', showEditorModeSelector);
-  });
 
 
   // Affichage exclusif des écrans/panneaux : ouvrir un menu (profil, admin,
