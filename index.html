@@ -1850,6 +1850,14 @@
     max-width: 560px;
   }
 
+  .plans-attempt-label{
+    font-family:'Press Start 2P', monospace;
+    font-size: 0.6rem;
+    color: var(--muted);
+    text-align: center;
+    margin: 0 auto 10px;
+    max-width: 560px;
+  }
   .plans-points-label{
     font-family:'Press Start 2P', monospace;
     font-size: 0.55rem;
@@ -3043,6 +3051,7 @@
       <button class="replay-btn" id="replayBtn">REJOUER</button>
     </div>
 
+    <p class="plans-attempt-label hidden" id="plansAttemptLabel"></p>
     <div class="ticket hidden" id="plansGameCard">
       <div class="ticket-label">
         <span id="plansCounter">FILM 1 / 10</span>
@@ -3056,13 +3065,13 @@
           <button type="button" class="ghost-btn" id="plansNextBtn">SUIVANT ▶</button>
         </div>
       </div>
+      <div class="feedback" id="plansFeedback"></div>
       <form id="plansAnswerForm">
         <div class="answer-row">
           <input type="text" id="plansAnswerInput" placeholder="Quel est ce film ?" autocomplete="off">
           <button type="submit" class="answer-submit-btn" id="plansAnswerSubmitBtn">VALIDER</button>
         </div>
       </form>
-      <div class="feedback-zone" id="plansFeedback"></div>
     </div>
 
     <div class="ticket result hidden" id="plansResultCard">
@@ -4094,6 +4103,7 @@
   const chooseRushBtn = document.getElementById('chooseRushBtn');
   const choosePlansBtn = document.getElementById('choosePlansBtn');
   const plansGameCard = document.getElementById('plansGameCard');
+  const plansAttemptLabel = document.getElementById('plansAttemptLabel');
 
   const editorToggle = document.getElementById('editorToggle');
   const editorPanel = document.getElementById('editorPanel');
@@ -4229,7 +4239,7 @@
     const inGame = !gameArea.classList.contains('hidden');
     const onLevelScreen = !levelScreen.classList.contains('hidden');
     topBarRow.classList.toggle('hidden', !(isAdminUnlocked || inGame || onLevelScreen));
-    filmstrip.classList.toggle('hidden', !inGame);
+    filmstrip.classList.toggle('hidden', !inGame || inPlansSession);
     backToLevelBtn.classList.toggle('hidden', !inGame);
   }
   const rulesScreen = document.getElementById('rulesScreen');
@@ -4740,6 +4750,9 @@
     gameArea.classList.remove('hidden');
     updateTopBarVisibility();
 
+    inPlansSession = false;
+    plansGameCard.classList.add('hidden');
+    plansResultCard.classList.add('hidden');
     resultCard.classList.add('hidden');
     quizCard.classList.remove('hidden');
     initFilmstrip();
@@ -4767,6 +4780,9 @@
 
   function goBackToLevelSelect(){
     gameArea.classList.add('hidden');
+    inPlansSession = false;
+    plansGameCard.classList.add('hidden');
+    plansResultCard.classList.add('hidden');
     resetTheme();
     renderLevelList();
     showModeSelect();
@@ -5013,6 +5029,9 @@
 
   function selectLevel(level){
     currentLevel = level;
+    inPlansSession = false;
+    plansGameCard.classList.add('hidden');
+    plansResultCard.classList.add('hidden');
     markLevelSeen(level);
     rushTotalTime = 0;
     rushSegmentStart = null;
@@ -6582,6 +6601,7 @@
   const PLANS_SESSION_SIZE = 10;
   const PLANS_POINTS = { 1: 5, 2: 3, 3: 1 };
   let plansSessionMovies = [];
+  let inPlansSession = false;
   let plansCurrentIndex = 0;
   let plansCurrentAttempt = 1;
   let plansCarouselIndex = 0;
@@ -6595,6 +6615,7 @@
       return;
     }
     currentLevel = null; // ce mode n'a pas de "niveau" au sens Classique/Rush
+    inPlansSession = true;
     const shuffled = plansPool.slice().sort(() => Math.random() - 0.5);
     plansSessionMovies = shuffled.slice(0, Math.min(PLANS_SESSION_SIZE, shuffled.length));
     plansCurrentIndex = 0;
@@ -6607,15 +6628,24 @@
     resultCard.classList.add('hidden');
     plansResultCard.classList.add('hidden');
     plansGameCard.classList.remove('hidden');
+    filmstrip.classList.add('hidden');
+    skipRow.classList.add('hidden');
     updateTopBarVisibility();
     applyGenreDecor();
     renderPlansQuestion();
   }
 
+  const PLANS_ATTEMPT_LABELS = {
+    1: '',
+    2: 'ESSAI 2 : 2 PLANS, FAIT UN EFFORT',
+    3: 'ESSAI 3 : IL TE FAUT 3 PLANS ?!'
+  };
+
   function renderPlansQuestion(){
     plansCurrentAttempt = 1;
     plansCarouselIndex = 0;
     plansFeedback.textContent = '';
+    plansFeedback.className = 'feedback';
     plansAnswerInput.value = '';
     plansAnswerInput.disabled = false;
     plansAnswerSubmitBtn.disabled = false;
@@ -6629,6 +6659,9 @@
     const revealedCount = plansCurrentAttempt;
     const pts = PLANS_POINTS[plansCurrentAttempt];
     plansPointsLabel.textContent = `${pts} POINT${pts > 1 ? 'S' : ''} SI BONNE REPONSE`;
+    const label = PLANS_ATTEMPT_LABELS[plansCurrentAttempt];
+    plansAttemptLabel.textContent = label;
+    plansAttemptLabel.classList.toggle('hidden', !label);
     if (plansCarouselIndex > revealedCount - 1) plansCarouselIndex = revealedCount - 1;
     plansBackdropImg.src = movie.backdrops[plansCarouselIndex];
     plansPrevBtn.disabled = plansCarouselIndex === 0;
@@ -6666,12 +6699,14 @@
       const pts = PLANS_POINTS[plansCurrentAttempt];
       plansSessionScore += pts;
       plansFeedback.textContent = `BONNE REPONSE ! +${pts} point${pts > 1 ? 's' : ''}`;
+      plansFeedback.className = 'feedback correct';
       await playCorrectSound();
       setTimeout(advancePlansFilm, 1300);
     } else if (plansCurrentAttempt < 3){
       await playWrongSound();
       plansCurrentAttempt++;
       plansFeedback.textContent = 'Raté... plan suivant.';
+      plansFeedback.className = 'feedback wrong';
       plansAnswerInput.value = '';
       plansAnswerInput.disabled = false;
       plansAnswerSubmitBtn.disabled = false;
@@ -6681,6 +6716,7 @@
     } else {
       await playWrongSound();
       plansFeedback.textContent = `C'était "${movie.title}" !`;
+      plansFeedback.className = 'feedback wrong';
       setTimeout(advancePlansFilm, 1700);
     }
   });
