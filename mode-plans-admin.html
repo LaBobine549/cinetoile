@@ -2316,6 +2316,39 @@
     padding-top: 16px;
   }
 
+  .plans-backdrop-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+    margin: 14px 0;
+  }
+  .plans-backdrop-tile{
+    position: relative;
+    cursor: pointer;
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 3px solid var(--card-edge);
+    aspect-ratio: 16/9;
+  }
+  .plans-backdrop-tile img{
+    width:100%; height:100%; object-fit:cover; display:block;
+  }
+  .plans-backdrop-tile.selected{
+    border-color: var(--cyan);
+    box-shadow: 0 0 10px rgba(0,240,255,.6);
+  }
+  .plans-backdrop-order{
+    position: absolute;
+    top: 4px; left: 4px;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--cyan);
+    color: #05010c;
+    font-family:'Press Start 2P', monospace;
+    font-size: 0.7rem;
+    display:flex; align-items:center; justify-content:center;
+  }
+
   .plans-result-item, .plans-pool-item{
     display:flex;
     align-items:center;
@@ -2766,6 +2799,16 @@
           <button type="button" class="ghost-btn" id="plansSearchBtn">🔍 RECHERCHER</button>
           <div id="plansSearchResults"></div>
           <div class="editor-form-msg" id="plansSearchMsg"></div>
+
+          <div id="plansBackdropPicker" class="hidden">
+            <p class="hint" id="plansBackdropPickerTitle"></p>
+            <p class="hint" style="color: var(--yellow);">Clique 3 plans, dans l'ordre où tu veux qu'ils apparaissent (1ᵉʳ = affiché seul, 2ᵉ = affiché avec le 1ᵉʳ, 3ᵉ = affiché avec les deux autres).</p>
+            <div class="plans-backdrop-grid" id="plansBackdropGrid"></div>
+            <div class="editor-actions">
+              <button type="button" class="primary-btn" id="plansConfirmSelectionBtn" disabled>VALIDER LA SELECTION (0/3)</button>
+              <button type="button" class="ghost-btn" id="plansCancelSelectionBtn">ANNULER</button>
+            </div>
+          </div>
 
           <h3 style="margin-top:22px;">FILMS DEJA AJOUTES (<span id="plansPoolCount">0</span>)</h3>
           <div id="plansPoolList"></div>
@@ -6126,8 +6169,8 @@
           addBtn.textContent = '✓ AJOUTE';
           addBtn.disabled = true;
         } else {
-          addBtn.textContent = 'AJOUTER';
-          addBtn.addEventListener('click', () => addMovieToPlansPool(movie, addBtn));
+          addBtn.textContent = 'CHOISIR LES PLANS';
+          addBtn.addEventListener('click', () => openBackdropPicker(movie, addBtn));
         }
         row.appendChild(poster);
         row.appendChild(info);
@@ -6140,44 +6183,133 @@
     }
   });
 
-  async function addMovieToPlansPool(movie, btnEl){
+  const plansBackdropPicker = document.getElementById('plansBackdropPicker');
+  const plansBackdropPickerTitle = document.getElementById('plansBackdropPickerTitle');
+  const plansBackdropGrid = document.getElementById('plansBackdropGrid');
+  const plansConfirmSelectionBtn = document.getElementById('plansConfirmSelectionBtn');
+  const plansCancelSelectionBtn = document.getElementById('plansCancelSelectionBtn');
+
+  let plansSelectedBackdrops = []; // dans l'ordre de clic (1er clic = 1er plan)
+  let plansPickerMovie = null;
+  let plansPickerBtnEl = null;
+
+  async function openBackdropPicker(movie, btnEl){
+    plansPickerMovie = movie;
+    plansPickerBtnEl = btnEl;
+    plansSelectedBackdrops = [];
     btnEl.disabled = true;
     btnEl.textContent = '...';
+    plansSearchMsg.textContent = '';
+
     try {
       const res = await withTimeout(fetch(`https://api.themoviedb.org/3/movie/${movie.id}/images?api_key=${TMDB_API_KEY}`));
       const data = await res.json();
+      // sans texte incruste (langue non detectee), les mieux notes/plus larges en premier
       const backdrops = (data.backdrops || [])
-        // on privilegie les plans sans texte incruste dessus (iso_639_1 null = pas de langue detectee)
-        // et bien notes/larges, pour de meilleures chances d'avoir un plan clair et sans spoiler visuel du titre
         .filter(b => b.iso_639_1 === null)
         .sort((a, b) => (b.vote_average - a.vote_average) || (b.width - a.width))
-        .slice(0, 3)
-        .map(b => `https://image.tmdb.org/t/p/w780${b.file_path}`);
+        .slice(0, 15)
+        .map(b => `https://image.tmdb.org/t/p/w500${b.file_path}`);
 
       if (backdrops.length < 3){
-        plansSearchMsg.textContent = `"${movie.title}" n'a pas assez de plans disponibles (${backdrops.length}/3) — non ajouté.`;
+        plansSearchMsg.textContent = `"${movie.title}" n'a pas assez de plans disponibles (${backdrops.length}/3) — impossible de continuer.`;
         plansSearchMsg.className = 'editor-form-msg error';
         btnEl.disabled = false;
-        btnEl.textContent = 'AJOUTER';
+        btnEl.textContent = 'CHOISIR LES PLANS';
         return;
       }
 
-      plansPool.push({
-        id: movie.id,
-        title: movie.title,
-        year: movie.release_date ? parseInt(movie.release_date.slice(0, 4), 10) : null,
-        posterUrl: movie.poster_path ? `https://image.tmdb.org/t/p/w92${movie.poster_path}` : '',
-        backdrops
+      plansBackdropPickerTitle.textContent = `Plans disponibles pour "${movie.title}" :`;
+      plansBackdropGrid.innerHTML = '';
+      backdrops.forEach(url => {
+        const tile = document.createElement('div');
+        tile.className = 'plans-backdrop-tile';
+        tile.dataset.url = url;
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = '';
+        tile.appendChild(img);
+        tile.addEventListener('click', () => toggleBackdropSelection(tile, url));
+        plansBackdropGrid.appendChild(tile);
       });
-      await savePlansPoolToCloud();
-      renderPlansPoolList();
-      btnEl.textContent = '✓ AJOUTE';
+      updatePlansConfirmBtn();
+      plansBackdropPicker.classList.remove('hidden');
+      plansBackdropPicker.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     } catch (err){
       plansSearchMsg.textContent = "Erreur lors de la récupération des plans, réessaie.";
       plansSearchMsg.className = 'editor-form-msg error';
       btnEl.disabled = false;
-      btnEl.textContent = 'AJOUTER';
+      btnEl.textContent = 'CHOISIR LES PLANS';
     }
+  }
+
+  function toggleBackdropSelection(tile, url){
+    const idx = plansSelectedBackdrops.indexOf(url);
+    if (idx !== -1){
+      // deja selectionne : on le retire, et on redecale l'ordre des suivants
+      plansSelectedBackdrops.splice(idx, 1);
+    } else {
+      if (plansSelectedBackdrops.length >= 3) return; // deja 3 choisis
+      plansSelectedBackdrops.push(url);
+    }
+    refreshBackdropGridOrder();
+    updatePlansConfirmBtn();
+  }
+
+  function refreshBackdropGridOrder(){
+    plansBackdropGrid.querySelectorAll('.plans-backdrop-tile').forEach(tile => {
+      const url = tile.dataset.url;
+      const orderIdx = plansSelectedBackdrops.indexOf(url);
+      tile.classList.toggle('selected', orderIdx !== -1);
+      const existingBadge = tile.querySelector('.plans-backdrop-order');
+      if (existingBadge) existingBadge.remove();
+      if (orderIdx !== -1){
+        const badge = document.createElement('div');
+        badge.className = 'plans-backdrop-order';
+        badge.textContent = orderIdx + 1;
+        tile.appendChild(badge);
+      }
+    });
+  }
+
+  function updatePlansConfirmBtn(){
+    const n = plansSelectedBackdrops.length;
+    plansConfirmSelectionBtn.textContent = `VALIDER LA SELECTION (${n}/3)`;
+    plansConfirmSelectionBtn.disabled = n !== 3;
+  }
+
+  plansConfirmSelectionBtn.addEventListener('click', async () => {
+    if (plansSelectedBackdrops.length !== 3 || !plansPickerMovie) return;
+    const movie = plansPickerMovie;
+    plansPool.push({
+      id: movie.id,
+      title: movie.title,
+      year: movie.release_date ? parseInt(movie.release_date.slice(0, 4), 10) : null,
+      posterUrl: movie.poster_path ? `https://image.tmdb.org/t/p/w92${movie.poster_path}` : '',
+      backdrops: plansSelectedBackdrops.slice()
+    });
+    await savePlansPoolToCloud();
+    renderPlansPoolList();
+    if (plansPickerBtnEl){
+      plansPickerBtnEl.textContent = '✓ AJOUTE';
+    }
+    closeBackdropPicker();
+  });
+
+  plansCancelSelectionBtn.addEventListener('click', () => {
+    if (plansPickerBtnEl){
+      plansPickerBtnEl.disabled = false;
+      plansPickerBtnEl.textContent = 'CHOISIR LES PLANS';
+    }
+    closeBackdropPicker();
+  });
+
+  function closeBackdropPicker(){
+    plansBackdropPicker.classList.add('hidden');
+    plansBackdropGrid.innerHTML = '';
+    plansSelectedBackdrops = [];
+    plansPickerMovie = null;
+    plansPickerBtnEl = null;
   }
 
   const adminGeneriquePseudoField = document.getElementById('adminGeneriquePseudoField');
