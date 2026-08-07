@@ -411,7 +411,7 @@
     display:flex;
     flex-direction:column;
     align-items:center;
-    padding: 32px 16px calc(64px + env(safe-area-inset-bottom));
+    padding: calc(32px + env(safe-area-inset-top)) 16px calc(64px + env(safe-area-inset-bottom));
     position: relative;
     overflow-x: hidden;
     width: 100%;
@@ -878,13 +878,19 @@
     box-shadow: 0 13px 0 0 var(--purple), 0 13px 0 3px #05010c, 0 20px 28px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.18);
     transition: transform .12s cubic-bezier(.34,1.56,.64,1), box-shadow .12s ease;
     clip-path: polygon(0 0, 100% 0, 100% 78%, 95% 100%, 0 100%);
+    display: flex;
+    align-items: center;
   }
   .mode-select-btn:hover{ transform: translateY(-2px); box-shadow: 0 15px 0 0 var(--purple), 0 15px 0 3px #05010c, 0 22px 30px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.22); }
   .mode-select-btn:active{ transform: translateY(12px); box-shadow: 0 1px 0 0 var(--purple), 0 1px 0 3px #05010c, inset 0 1px 0 rgba(255,255,255,.1); }
   .mode-select-btn:focus-visible{ outline: 2px solid var(--yellow); outline-offset: 2px; }
 
   .mode-icon{
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    flex-shrink: 0;
     margin-right: 8px;
   }
   .mode-icon-img{
@@ -2746,8 +2752,8 @@
       <p class="hint" id="levelScreenHint">Sélectionne un mode de jeu.</p>
 
       <div class="mode-select-view" id="modeSelectView">
-        <button type="button" class="mode-select-btn" id="chooseClassicBtn"><span class="mode-icon icon-clap">🎬</span><span class="mode-text typewriter">MODE CLASSIQUE</span></button>
-        <button type="button" class="mode-select-btn" id="chooseRushBtn"><span class="mode-icon icon-clock">⏱</span><span class="mode-text">MODE RUSH</span></button>
+        <button type="button" class="mode-select-btn" id="chooseClassicBtn"><span class="mode-icon"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJAAAABwCAYAAADxAvk6AAABpklEQVR4nO3cLU4DQQCAUYakrgHRqj0AgduhkAgkittBuAMCUldRTsCu+FJ+ynt2sjsrvoyYzM44O7LVWB/mxi83F+n9z68v6fmbq+s/Pf/728fs+P6wG2mCBefHfDmnT0AkAiIREImASAREIiCSvEdgn+d3zz9tptnxuk9kBSIREImASAREIiASAZEIiERAJAIiERCJgEgERCIgEgGRCIhk8SyI8z6nPX/9r8wKRCIgEgGRCIhEQCQCIhEQiYBIBEQiIBIBkQiIREAkAiIREMlw3sf8c5buF7ICkQiIREAkAiIREImASAREIiASAZEIiERAJAIiERCJgEgERDK222n2PNDD49M3fQo/4f7udnZ86f4gKxCJgEgERCIgEgGRCIhEQCQCIhEQiYBIBEQiIBIBkQiIREAkAiIREImASAREIiASAZEIiERAJAIiERCJgEgERCIgEgGRCIhEQCQCIhEQiYBIBEQiIBIBkQiIREAki/dE87+5J5qjEhCJgEgERCIgEgGRCIhkrMbaPhBf2h92Y27cCkQiIBIBkQiIREAkAiIREMknrWFHDQhLFeUAAAAASUVORK5CYII=" alt="" class="mode-icon-img"></span><span class="mode-text typewriter">MODE CLASSIQUE</span></button>
+        <button type="button" class="mode-select-btn" id="chooseRushBtn"><span class="mode-icon"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAACRUlEQVR4nO3dIU4DQRxGcbapIAgU4QIgqjgB18AASXsRFHeoRmHQCNAYTAW6XIBgQJCSEOAG84nJZnb73s8uwzbwMsn8s2275Xz2tyOsSesXoLYMAM4A4AwAzgDgDADOAOAMAM4A4AwAzgDgDADOAOAMAM4A4Lq96aT4PMDZyUHVDZ5eP6vWr68Oq9a3dnz9VrX+9Gi/av3dy3vxujsAnAHAGQCcAcAZAJwBwBkAXJwDJPQ5wdDP+Yk7AJwBwBkAnAHAGQCcAcAZAFyXfmDsc4LWWp/zv35+i/9jdwA4A4AzADgDgDMAOAOAMwC4OAdI6HOCoZ/zE3cAOAOAMwA4A4AzADgDgDMAuOo5QNJ6TnBzvlu1fnG7qVrf+pyfuAPAGQCcAcAZAJwBwBkAnAHATfu+QTrHpjlBOkfXzglqDf2cn7gDwBkAnAHAGQCcAcAZAJwBwBkAnAHAGQCcAcAZAJwBwBkAnAHA9f48QOv3BfQtvb70vED6+/i+APXKAOAMAM4A4AwAzgDgDABu6z8ncP1wGX7BY/Fy+l5APydQo2YAcAYAZwBwBgBnAHAGADf67w2M5/x4g/Ic4Hn1Ubx+cf9dvD70OYE7AJwBwBkAnAHAGQCcAcAZAFy39ef8+ALKc4Bk7HMCdwA4A4AzADgDgDMAOAOAMwC4OAegn/OTNAdIWs8J3AHgDADOAOAMAM4A4AwAzgDguuV8VvU8gMbNHQDOAOAMAM4A4AwAzgDgDADOAOAMAM4A4AwAzgDgDADOAOAMAO4fo3KLbiiA0ngAAAAASUVORK5CYII=" alt="" class="mode-icon-img"></span><span class="mode-text">MODE RUSH</span></button>
         <button type="button" class="mode-select-btn" id="choosePlansBtn"><span class="mode-icon"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALAAAACACAYAAACrzePzAAACOklEQVR4nO3csW1UQRRAURaZDETmfhABGZ3QB7k7ISNAFEEXZAgyAtMA8gRP49m7Oie1V3++dPWCp9G/vLq8fnwBUS9PHwAmBEyagEkTMGkCJk3ApAmYtLvVP3z9+fs5zgH/9eH+zZN/N4FJEzBpAiZNwKQJmDQBkyZg0gRMmoBJEzBpAiZNwKQJmDQBkyZg0pb3gadW9zm5bbvvk5vApAmYNAGTJmDSBEyagEkTMGnb98Arfx//XE6f4ZZNv/+82uOe3vObwKQJmDQBkyZg0gRMmoBJEzBpx/fAnDW9r3v6+9EmMGkCJk3ApAmYNAGTJmDSBEzacg/8+cdzHINTVvd53317es/7/f3s91MmMGkCJk3ApAmYNAGTJmDSBEya+8BXbvpdh6nVnvc0E5g0AZMmYNIETJqASRMwaQImLb8H3r0n3f394un5p/d1V1bvf3pPbQKTJmDSBEyagEkTMGkCJk3ApF39Hvj0nnT1/N170ul3FXa//2kmMGkCJk3ApAmYNAGTJmDSBEzaZbXne/vpy+gBvx4+jn6/Mj3fSv38U9P3392PCUyagEkTMGkCJk3ApAmYNAGTdvX3gU/vSVfPX+0pT59/avr+u5nApAmYNAGTJmDSBEyagEkTMGnb7wPDhPvA3DQBkyZg0gRMmoBJEzBpAiZNwKQJmDQBkyZg0gRMmoBJEzBpAiZNwKQJmDQBkyZg0gRMmoBJEzBpAiZt+V0IuGYmMGkCJk3ApAmYNAGTJmDSBEzaP/PPUua5wD45AAAAAElFTkSuQmCC" alt="" class="mode-icon-img"></span><span class="mode-text">MODE PLANS</span></button>
       </div>
 
@@ -5150,11 +5156,6 @@
       colors: { pink:'#ff2e9a', cyan:'#00f0ff', purple:'#b026ff', yellow:'#f9f002', green:'#39ff88', wrong:'#ff3860', bg:'#0b0316', bgDeep:'#05010c', purpleRgb:'176,38,255', cyanRgb:'0,240,255' },
       music: 'dark'
     },
-    inferno: {
-      label: 'Enfer écarlate',
-      colors: { pink:'#ff3d1a', cyan:'#ff8a00', purple:'#8c0f2a', yellow:'#ffcf40', green:'#7cff3d', wrong:'#ff003c', bg:'#160402', bgDeep:'#0a0100', purpleRgb:'140,15,42', cyanRgb:'255,138,0' },
-      music: 'dark'
-    },
     abyss: {
       label: 'Abysse glacial',
       colors: { pink:'#3d6bff', cyan:'#38f9d7', purple:'#141a4e', yellow:'#a0e7ff', green:'#00e0a4', wrong:'#ff4d6d', bg:'#010512', bgDeep:'#00030a', purpleRgb:'20,26,78', cyanRgb:'56,249,215' },
@@ -5188,11 +5189,7 @@
     root.setProperty('--purple-rgb', theme.colors.purpleRgb);
     root.setProperty('--cyan-rgb', theme.colors.cyanRgb);
 
-    if (themeKey === 'inferno'){
-      startFireAmbience();
-    } else {
-      stopFireAmbience();
-    }
+    stopFireAmbience();
   }
 
   function resetTheme(){
@@ -6292,6 +6289,20 @@
   });
 
   let audioCtx = null;
+
+  // Les navigateurs exigent que la création/reprise du contexte audio se
+  // fasse tout près d'un vrai geste utilisateur — on la déclenche donc dès
+  // la toute première interaction (clic ou toucher), plutôt que d'attendre
+  // le premier son à jouer, ce qui pouvait parfois arriver trop tard et
+  // laisser le son silencieux sans aucune erreur visible.
+  function unlockAudioOnce(){
+    initAudio();
+    document.removeEventListener('pointerdown', unlockAudioOnce);
+    document.removeEventListener('keydown', unlockAudioOnce);
+  }
+  document.addEventListener('pointerdown', unlockAudioOnce, { once: true });
+  document.addEventListener('keydown', unlockAudioOnce, { once: true });
+
   let masterGain = null;
 
   function initAudio(){
@@ -6438,13 +6449,24 @@
   // ---------- Mode Plans : sélection de films (admin) ----------
   let plansPool = [];
 
+  let plansPoolLoadFailed = false;
+
   async function loadPlansPoolFromCloud(){
     if (!firebaseReady) return;
+    plansPoolLoadFailed = false;
     try {
-      const doc = await withTimeout(db.collection('config').doc('plansMovies').get());
+      const doc = await withTimeout(db.collection('config').doc('plansMovies').get(), 10000);
       plansPool = (doc.exists && doc.data().movies) || [];
     } catch (err){
-      plansPool = [];
+      // Premier essai raté (lenteur/coupure reseau) : on retente une fois avant
+      // d'abandonner, pour eviter de dire "aucun film" alors qu'il y en a bien.
+      try {
+        const doc2 = await withTimeout(db.collection('config').doc('plansMovies').get(), 10000);
+        plansPool = (doc2.exists && doc2.data().movies) || [];
+      } catch (err2){
+        plansPool = [];
+        plansPoolLoadFailed = true;
+      }
     }
     renderPlansPoolList();
   }
@@ -6709,7 +6731,11 @@
     settingsDropdown.classList.add('hidden');
     await loadPlansPoolFromCloud();
     if (plansPool.length < 3){
-      alert("Pas assez de films disponibles dans le mode Plans pour l'instant — réessaie plus tard.");
+      if (plansPoolLoadFailed){
+        alert("Impossible de contacter le serveur pour récupérer les films du mode Plans — vérifie ta connexion et réessaie.");
+      } else {
+        alert("Pas assez de films disponibles dans le mode Plans pour l'instant — réessaie plus tard.");
+      }
       return;
     }
     currentLevel = null; // ce mode n'a pas de "niveau" au sens Classique/Rush
