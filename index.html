@@ -1902,6 +1902,36 @@
     }
   }
 
+  .plans-progress-row{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 5px;
+    margin: 0 auto 14px;
+    max-width: var(--content-width);
+  }
+  .plans-progress-frame{
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    background: #140a28;
+    border: 2px solid var(--card-edge);
+    flex-shrink: 0;
+  }
+  .plans-progress-frame.current{
+    border-color: var(--cyan);
+    box-shadow: 0 0 6px rgba(0,240,255,.6);
+  }
+  .plans-progress-frame.correct{
+    background: var(--green);
+    border-color: var(--green);
+    box-shadow: 0 0 6px rgba(57,255,136,.5);
+  }
+  .plans-progress-frame.wrong{
+    background: var(--wrong);
+    border-color: var(--wrong);
+    box-shadow: 0 0 6px rgba(255,56,96,.5);
+  }
   .plans-attempt-label{
     font-family:'Press Start 2P', monospace;
     font-size: 0.6rem;
@@ -2752,9 +2782,9 @@
       <p class="hint" id="levelScreenHint">Sélectionne un mode de jeu.</p>
 
       <div class="mode-select-view" id="modeSelectView">
-        <button type="button" class="mode-select-btn" id="chooseClassicBtn"><span class="mode-icon"><img src="assets/icons/mode_classic.png" alt="" class="mode-icon-img"></span><span class="mode-text typewriter">MODE CLASSIQUE</span></button>
-        <button type="button" class="mode-select-btn" id="chooseRushBtn"><span class="mode-icon"><img src="assets/icons/mode_rush.png" alt="" class="mode-icon-img"></span><span class="mode-text">MODE RUSH</span></button>
-        <button type="button" class="mode-select-btn" id="choosePlansBtn"><span class="mode-icon"><img src="assets/icons/mode_plans.png" alt="" class="mode-icon-img"></span><span class="mode-text">MODE PLANS</span></button>
+        <button type="button" class="mode-select-btn" id="chooseClassicBtn"><span class="mode-icon"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJAAAABwCAYAAADxAvk6AAABpklEQVR4nO3cLU4DQQCAUYakrgHRqj0AgduhkAgkittBuAMCUldRTsCu+FJ+ynt2sjsrvoyYzM44O7LVWB/mxi83F+n9z68v6fmbq+s/Pf/728fs+P6wG2mCBefHfDmnT0AkAiIREImASAREIiCSvEdgn+d3zz9tptnxuk9kBSIREImASAREIiASAZEIiERAJAIiERCJgEgERCIgEgGRCIhk8SyI8z6nPX/9r8wKRCIgEgGRCIhEQCQCIhEQiYBIBEQiIBIBkQiIREAkAiIREMlw3sf8c5buF7ICkQiIREAkAiIREImASAREIiASAZEIiERAJAIiERCJgEgERDK222n2PNDD49M3fQo/4f7udnZ86f4gKxCJgEgERCIgEgGRCIhEQCQCIhEQiYBIBEQiIBIBkQiIREAkAiIREImASAREIiASAZEIiERAJAIiERCJgEgERCIgEgGRCIhEQCQCIhEQiYBIBEQiIBIBkQiIREAki/dE87+5J5qjEhCJgEgERCIgEgGRCIhkrMbaPhBf2h92Y27cCkQiIBIBkQiIREAkAiIREMknrWFHDQhLFeUAAAAASUVORK5CYII=" alt="" class="mode-icon-img"></span><span class="mode-text typewriter">MODE CLASSIQUE</span></button>
+        <button type="button" class="mode-select-btn" id="chooseRushBtn"><span class="mode-icon"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAACRUlEQVR4nO3dIU4DQRxGcbapIAgU4QIgqjgB18AASXsRFHeoRmHQCNAYTAW6XIBgQJCSEOAG84nJZnb73s8uwzbwMsn8s2275Xz2tyOsSesXoLYMAM4A4AwAzgDgDADOAOAMAM4A4AwAzgDgDADOAOAMAM4A4Lq96aT4PMDZyUHVDZ5eP6vWr68Oq9a3dnz9VrX+9Gi/av3dy3vxujsAnAHAGQCcAcAZAJwBwBkAXJwDJPQ5wdDP+Yk7AJwBwBkAnAHAGQCcAcAZAFyXfmDsc4LWWp/zv35+i/9jdwA4A4AzADgDgDMAOAOAMwC4OAdI6HOCoZ/zE3cAOAOAMwA4A4AzADgDgDMAuOo5QNJ6TnBzvlu1fnG7qVrf+pyfuAPAGQCcAcAZAJwBwBkAnAHATfu+QTrHpjlBOkfXzglqDf2cn7gDwBkAnAHAGQCcAcAZAJwBwBkAnAHAGQCcAcAZAJwBwBkAnAHA9f48QOv3BfQtvb70vED6+/i+APXKAOAMAM4A4AwAzgDgDABu6z8ncP1wGX7BY/Fy+l5APydQo2YAcAYAZwBwBgBnAHAGADf67w2M5/x4g/Ic4Hn1Ubx+cf9dvD70OYE7AJwBwBkAnAHAGQCcAcAZAFy39ef8+ALKc4Bk7HMCdwA4A4AzADgDgDMAOAOAMwC4OAegn/OTNAdIWs8J3AHgDADOAOAMAM4A4AwAzgDguuV8VvU8gMbNHQDOAOAMAM4A4AwAzgDgDADOAOAMAM4A4AwAzgDgDADOAOAMAO4fo3KLbiiA0ngAAAAASUVORK5CYII=" alt="" class="mode-icon-img"></span><span class="mode-text">MODE RUSH</span></button>
+        <button type="button" class="mode-select-btn" id="choosePlansBtn"><span class="mode-icon"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALAAAACACAYAAACrzePzAAACOklEQVR4nO3csW1UQRRAURaZDETmfhABGZ3QB7k7ISNAFEEXZAgyAtMA8gRP49m7Oie1V3++dPWCp9G/vLq8fnwBUS9PHwAmBEyagEkTMGkCJk3ApAmYtLvVP3z9+fs5zgH/9eH+zZN/N4FJEzBpAiZNwKQJmDQBkyZg0gRMmoBJEzBpAiZNwKQJmDQBkyZg0pb3gadW9zm5bbvvk5vApAmYNAGTJmDSBEyagEkTMGnb98Arfx//XE6f4ZZNv/+82uOe3vObwKQJmDQBkyZg0gRMmoBJEzBpx/fAnDW9r3v6+9EmMGkCJk3ApAmYNAGTJmDSBEzacg/8+cdzHINTVvd53317es/7/f3s91MmMGkCJk3ApAmYNAGTJmDSBEya+8BXbvpdh6nVnvc0E5g0AZMmYNIETJqASRMwaQImLb8H3r0n3f394un5p/d1V1bvf3pPbQKTJmDSBEyagEkTMGkCJk3ApF39Hvj0nnT1/N170ul3FXa//2kmMGkCJk3ApAmYNAGTJmDSBEzaZbXne/vpy+gBvx4+jn6/Mj3fSv38U9P3392PCUyagEkTMGkCJk3ApAmYNAGTdvX3gU/vSVfPX+0pT59/avr+u5nApAmYNAGTJmDSBEyagEkTMGnb7wPDhPvA3DQBkyZg0gRMmoBJEzBpAiZNwKQJmDQBkyZg0gRMmoBJEzBpAiZNwKQJmDQBkyZg0gRMmoBJEzBpAiZt+V0IuGYmMGkCJk3ApAmYNAGTJmDSBEzaP/PPUua5wD45AAAAAElFTkSuQmCC" alt="" class="mode-icon-img"></span><span class="mode-text">MODE PLANS</span></button>
       </div>
 
       <div class="mode-panel hidden" id="classicModePanel">
@@ -3103,6 +3133,7 @@
       <button class="replay-btn" id="replayBtn">REJOUER</button>
     </div>
 
+    <div class="plans-progress-row hidden" id="plansProgressRow"></div>
     <p class="plans-attempt-label hidden" id="plansAttemptLabel"></p>
     <div class="ticket hidden" id="plansGameCard">
       <div class="ticket-label">
@@ -3388,8 +3419,8 @@
   }
 
   // Etoiles de difficulte (mode Classique) : moins de vies = niveau plus dur = plus d'etoiles.
-  const LEVEL_STAR_ICON = 'assets/icons/level_star.png';
-  const LEVEL_HOURGLASS_ICON = 'assets/icons/level_hourglass.png';
+  const LEVEL_STAR_ICON = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGwAAABUCAYAAABnT9INAAABzklEQVR4nO3dMUoDURCA4V3JdaxtTJUyFxBvIHgcwSvYpUnKVLFJk8bbWKiF7Q44MI/3/vh/ZZBN5Hdg2F038wRxfzt9tzz++8c0tzx+lZveH0A5BoMxGIzBYAwGM9xmlN0Gj6+5v7nN01fq50fbHp0wGIPBGAzGYDAGg1n1/gB/ld0Gs8fJbo+9OGEwBoMxGIzBYAwG021LbH0FuUr0OXudY3TCYAwGYzAYg8EYDGYebVs7nd8WX/+8PDZ9391++Vziy6Hp26Y5YTAGgzEYjMFgDAYTnkuMtrX/5nnb532j7dQJgzEYjMFgDAZjMJhwS1zfPSy+7vZYK3uu0gmDMRiMwWAMBmMwmPDeuuyV6NbbY68rzlWy22B036MTBmMwGIPBGAzGYDCr0bbBaxVduY62x6iLEwZjMBiDwRgMxmAwZfcleoX6V7T1RVtidnt0wmAMBmMwGIPBGAym+ZNwrnV77PW/z04YjMFgDAZjMBiDwaS3xGjrqzrOaNtj1TaYPccYccJgDAZjMBiDwRgMpuxcYvYp09F9d9H2WPXdK5Gq/y6JVD2X0gmDMRiMwWAMBmMwmLKnald9F8loT/ke7fdywmAMBmMwGIPBGAzmB/XkW8LdPjO+AAAAAElFTkSuQmCC';
+  const LEVEL_HOURGLASS_ICON = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAACRUlEQVR4nO3dIU4DQRxGcbapIAgU4QIgqjgB18AASXsRFHeoRmHQCNAYTAW6XIBgQJCSEOAG84nJZnb73s8uwzbwMsn8s2275Xz2tyOsSesXoLYMAM4A4AwAzgDgDADOAOAMAM4A4AwAzgDgDADOAOAMAM4A4Lq96aT4PMDZyUHVDZ5eP6vWr68Oq9a3dnz9VrX+9Gi/av3dy3vxujsAnAHAGQCcAcAZAJwBwBkAXJwDJPQ5wdDP+Yk7AJwBwBkAnAHAGQCcAcAZAFyXfmDsc4LWWp/zv35+i/9jdwA4A4AzADgDgDMAOAOAMwC4OAdI6HOCoZ/zE3cAOAOAMwA4A4AzADgDgDMAuOo5QNJ6TnBzvlu1fnG7qVrf+pyfuAPAGQCcAcAZAJwBwBkAnAHATfu+QTrHpjlBOkfXzglqDf2cn7gDwBkAnAHAGQCcAcAZAJwBwBkAnAHAGQCcAcAZAJwBwBkAnAHA9f48QOv3BfQtvb70vED6+/i+APXKAOAMAM4A4AwAzgDgDABu6z8ncP1wGX7BY/Fy+l5APydQo2YAcAYAZwBwBgBnAHAGADf67w2M5/x4g/Ic4Hn1Ubx+cf9dvD70OYE7AJwBwBkAnAHAGQCcAcAZAFy39ef8+ALKc4Bk7HMCdwA4A4AzADgDgDMAOAOAMwC4OAegn/OTNAdIWs8J3AHgDADOAOAMAM4A4AwAzgDguuV8VvU8gMbNHQDOAOAMAM4A4AwAzgDgDADOAOAMAM4A4AwAzgDgDADOAOAMAO4fo3KLbiiA0ngAAAAASUVORK5CYII=';
   function starsForLevel(level){
     const lives = (level && level.lives) || 5;
     if (lives >= 4) return 1;
@@ -4167,6 +4198,7 @@
   const choosePlansBtn = document.getElementById('choosePlansBtn');
   const plansGameCard = document.getElementById('plansGameCard');
   const plansAttemptLabel = document.getElementById('plansAttemptLabel');
+  const plansProgressRow = document.getElementById('plansProgressRow');
 
   const editorToggle = document.getElementById('editorToggle');
   const editorPanel = document.getElementById('editorPanel');
@@ -4811,6 +4843,7 @@
     inPlansSession = false;
     plansGameCard.classList.add('hidden');
     plansResultCard.classList.add('hidden');
+    plansProgressRow.classList.add('hidden');
     stage.classList.remove('plans-wide');
     resultCard.classList.add('hidden');
     quizCard.classList.remove('hidden');
@@ -4842,6 +4875,7 @@
     inPlansSession = false;
     plansGameCard.classList.add('hidden');
     plansResultCard.classList.add('hidden');
+    plansProgressRow.classList.add('hidden');
     stage.classList.remove('plans-wide');
     resetTheme();
     renderLevelList();
@@ -5092,6 +5126,7 @@
     inPlansSession = false;
     plansGameCard.classList.add('hidden');
     plansResultCard.classList.add('hidden');
+    plansProgressRow.classList.add('hidden');
     stage.classList.remove('plans-wide');
     markLevelSeen(level);
     rushTotalTime = 0;
@@ -6452,18 +6487,23 @@
   let plansPoolLoadFailed = false;
 
   async function loadPlansPoolFromCloud(){
+    console.log('[plans] loadPlansPoolFromCloud appelé, firebaseReady=', firebaseReady);
     if (!firebaseReady) return;
     plansPoolLoadFailed = false;
     try {
       const doc = await withTimeout(db.collection('config').doc('plansMovies').get(), 10000);
       plansPool = (doc.exists && doc.data().movies) || [];
+      console.log('[plans] chargement reussi, nb films:', plansPool.length);
     } catch (err){
+      console.error('[plans] premiere tentative echouee:', err);
       // Premier essai raté (lenteur/coupure reseau) : on retente une fois avant
       // d'abandonner, pour eviter de dire "aucun film" alors qu'il y en a bien.
       try {
         const doc2 = await withTimeout(db.collection('config').doc('plansMovies').get(), 10000);
         plansPool = (doc2.exists && doc2.data().movies) || [];
+        console.log('[plans] deuxieme tentative reussie, nb films:', plansPool.length);
       } catch (err2){
+        console.error('[plans] deuxieme tentative echouee aussi:', err2);
         plansPool = [];
         plansPoolLoadFailed = true;
       }
@@ -6718,7 +6758,6 @@
   }
 
   // ---------- Mode Plans : déroulé de la partie ----------
-  const PLANS_SESSION_SIZE = 10;
   const PLANS_POINTS = { 1: 5, 2: 3, 3: 1 };
   let plansSessionMovies = [];
   let inPlansSession = false;
@@ -6741,7 +6780,7 @@
     currentLevel = null; // ce mode n'a pas de "niveau" au sens Classique/Rush
     inPlansSession = true;
     const shuffled = plansPool.slice().sort(() => Math.random() - 0.5);
-    plansSessionMovies = shuffled.slice(0, Math.min(PLANS_SESSION_SIZE, shuffled.length));
+    plansSessionMovies = shuffled;
     plansCurrentIndex = 0;
     plansSessionScore = 0;
 
@@ -6757,6 +6796,7 @@
     skipRow.classList.add('hidden');
     updateTopBarVisibility();
     applyGenreDecor();
+    renderPlansProgressBar();
     renderPlansQuestion();
   }
 
@@ -6765,6 +6805,33 @@
     2: 'ESSAI 2 : 2 PLANS, FAIT UN EFFORT',
     3: 'ESSAI 3 : IL TE FAUT 3 PLANS ?!'
   };
+
+  function renderPlansProgressBar(){
+    plansProgressRow.innerHTML = '';
+    plansProgressRow.classList.remove('hidden');
+    plansSessionMovies.forEach((_, i) => {
+      const frame = document.createElement('div');
+      frame.className = 'plans-progress-frame';
+      frame.id = 'plans-frame-' + i;
+      plansProgressRow.appendChild(frame);
+    });
+    updatePlansProgressCurrent();
+  }
+
+  function updatePlansProgressCurrent(){
+    plansSessionMovies.forEach((_, i) => {
+      const frame = document.getElementById('plans-frame-' + i);
+      if (frame) frame.classList.toggle('current', i === plansCurrentIndex);
+    });
+  }
+
+  function markPlansProgressResult(isCorrect){
+    const frame = document.getElementById('plans-frame-' + plansCurrentIndex);
+    if (frame){
+      frame.classList.remove('current');
+      frame.classList.add(isCorrect ? 'correct' : 'wrong');
+    }
+  }
 
   function renderPlansQuestion(){
     plansCurrentAttempt = 1;
@@ -6775,6 +6842,7 @@
     plansAnswerInput.disabled = false;
     plansAnswerSubmitBtn.disabled = false;
     plansCounter.textContent = `FILM ${plansCurrentIndex + 1} / ${plansSessionMovies.length}`;
+    updatePlansProgressCurrent();
     renderPlansAttemptView();
     if (!isTouchDevice) plansAnswerInput.focus();
   }
@@ -6825,6 +6893,7 @@
       plansSessionScore += pts;
       plansFeedback.textContent = `BONNE REPONSE ! +${pts} point${pts > 1 ? 's' : ''}`;
       plansFeedback.className = 'feedback correct';
+      markPlansProgressResult(true);
       await playCorrectSound();
       setTimeout(advancePlansFilm, 1300);
     } else if (plansCurrentAttempt < 3){
@@ -6842,6 +6911,7 @@
       await playWrongSound();
       plansFeedback.textContent = `C'était "${movie.title}" !`;
       plansFeedback.className = 'feedback wrong';
+      markPlansProgressResult(false);
       setTimeout(advancePlansFilm, 1700);
     }
   });
@@ -6857,6 +6927,8 @@
 
   function endPlansSession(){
     plansGameCard.classList.add('hidden');
+    plansProgressRow.classList.add('hidden');
+    plansAttemptLabel.classList.add('hidden');
     plansResultCard.classList.remove('hidden');
     const maxScore = plansSessionMovies.length * 5;
     plansResultScore.textContent = `Score final : ${plansSessionScore} / ${maxScore} points`;
