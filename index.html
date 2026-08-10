@@ -435,6 +435,96 @@
   }
 
   /* ---------- Header ---------- */
+  .intro-sequence{
+    position: fixed;
+    inset: 0;
+    z-index: 20000;
+    background: #05010c;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .intro-sequence.hidden{ display: none; }
+  .intro-slide{
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 24px;
+    opacity: 0;
+    transition: opacity .6s ease;
+  }
+  .intro-slide.active{
+    display: flex;
+    opacity: 1;
+  }
+  .intro-slide.fading-out{
+    opacity: 0;
+  }
+  .intro-statuette{
+    width: 170px;
+    height: auto;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    filter: drop-shadow(0 0 18px rgba(168,209,108,.55));
+    margin-bottom: 22px;
+    animation: intro-statuette-glow 2.4s ease-in-out infinite;
+  }
+  @keyframes intro-statuette-glow{
+    0%, 100%{ filter: drop-shadow(0 0 12px rgba(168,209,108,.45)); }
+    50%{ filter: drop-shadow(0 0 26px rgba(168,209,108,.8)); }
+  }
+  .intro-studio-name{
+    font-family: 'Press Start 2P', monospace;
+    font-size: 1.3rem;
+    color: #ffe27a;
+    text-shadow: 0 0 10px rgba(249,183,0,.7);
+    letter-spacing: .04em;
+  }
+  .intro-warning-icon{
+    font-size: 3rem;
+    color: var(--yellow);
+    margin-bottom: 10px;
+    text-shadow: 0 0 14px rgba(249,240,2,.6);
+  }
+  .intro-warning-title{
+    font-family: 'Press Start 2P', monospace;
+    font-size: 1rem;
+    color: var(--yellow);
+    margin-bottom: 18px;
+    letter-spacing: .04em;
+  }
+  .intro-warning-text, .intro-dedication-text{
+    font-family: 'VT323', monospace;
+    font-size: 1.35rem;
+    color: var(--text);
+    max-width: 520px;
+    line-height: 1.5;
+  }
+  .intro-skip-hint{
+    position: absolute;
+    bottom: 30px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-family: 'VT323', monospace;
+    font-size: 1rem;
+    color: var(--muted);
+    animation: intro-skip-blink 1.8s ease-in-out infinite;
+  }
+  @keyframes intro-skip-blink{
+    0%, 100%{ opacity: .4; }
+    50%{ opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .intro-statuette{ animation: none; }
+    .intro-skip-hint{ animation: none; }
+  }
+
   .tv-overlay{
     position: fixed;
     inset: 0;
@@ -2750,6 +2840,22 @@
 </head>
 <body>
 
+  <div class="intro-sequence" id="introSequence">
+    <div class="intro-slide active" id="introSlide1">
+      <img src="data:image/png;base64,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" alt="" class="intro-statuette">
+      <p class="intro-studio-name">OscarStudio</p>
+    </div>
+    <div class="intro-slide" id="introSlide2">
+      <p class="intro-warning-icon">⚠</p>
+      <p class="intro-warning-title">AVERTISSEMENT</p>
+      <p class="intro-warning-text">Ce jeu contient des effets visuels scintillants et des flashs lumineux (certains décors et animations).Âmes sensibles à la photosensibilité, soyez prudent·e·s.</p>
+    </div>
+    <div class="intro-slide" id="introSlide3">
+      <p class="intro-dedication-text">Les descriptions utilisées dans ce jeu vidéo ne visent en aucun cas les personnes et studios qui ont créé ces classiques du cinéma.<br><br>C'est avant tout de l'humour.</p>
+    </div>
+    <p class="intro-skip-hint">Touchez l'écran pour continuer</p>
+  </div>
+
   <div class="tv-overlay" id="tvOverlay" aria-hidden="true">
     <div class="tv-line"></div>
   </div>
@@ -2776,7 +2882,7 @@
       <button class="settings-gear-btn" id="settingsGearBtn" aria-label="Ouvrir le menu réglages">⚙️</button>
       <button type="button" class="generique-available-badge hidden" id="generiqueAvailableBadge">GENERIQUE disponible</button>
       <a href="#" target="_blank" rel="noopener" class="update-available-badge hidden" id="updateAvailableBadge">🔄 MISE A JOUR DISPONIBLE</a>
-      <a href="https://github.com/LaBobine549/Mac/releases/latest" target="_blank" rel="noopener" class="mac-version-badge" id="macVersionBadge"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHAAAABwCAYAAADG4PRLAAABh0lEQVR4nO3cMU7DQBBAUYxIB0Xuf0gK6FKEC0TZYrWxv3mvdWHLX1OMLO/2trPL9nl/dv32/fOqR3nocv16ev12/91e9CgPve95c+YJGCdgnIBxAsYJGCdgnIBxAsYJGCdgnIBxAsYJGCdgnIBxAsYJGCdgnIBxAsYJGCdgnIBxAsYJGCdgnIBxAsYJGCdg3MfqG4z+/2OOCYwTME7AOAHjBIwTME7AuOk98OjnvJydCYwTME7AOAHjBIwTME7AuOVnXR59Tzz6eaAjJjBOwDgB4wSMEzBOwDgB43bfcVbvifU9b8QExgkYJ2CcgHECxgkYJ2DccAca7mmL96jZ/wuPvufNvl8TGCdgnIBxAsYJGCdgnIBx2+z3uLN/b5u1+v2awDgB4wSMEzBOwDgB4wSMc15onAmMEzBOwDgB4wSMEzBOwLjpPXDvc17+OxMYJ2CcgHECxgkYJ2CcgHECxgkYJ2CcgHECxgkYJ2CcgHHT58SwlnNiTk7AOAHjBIwTME7AOAHj/gCtTTnhibVT8QAAAABJRU5ErkJggg==" alt="" class="mac-version-badge-icon">VERSION MAC</a>
+      <a href="https://github.com/LaBobine549/Mac/releases/latest/download/Cinetoile-Mac.dmg" class="mac-version-badge" id="macVersionBadge"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHAAAABwCAYAAADG4PRLAAABh0lEQVR4nO3cMU7DQBBAUYxIB0Xuf0gK6FKEC0TZYrWxv3mvdWHLX1OMLO/2trPL9nl/dv32/fOqR3nocv16ev12/91e9CgPve95c+YJGCdgnIBxAsYJGCdgnIBxAsYJGCdgnIBxAsYJGCdgnIBxAsYJGCdgnIBxAsYJGCdgnIBxAsYJGCdgnIBxAsYJGCdg3MfqG4z+/2OOCYwTME7AOAHjBIwTME7AuOk98OjnvJydCYwTME7AOAHjBIwTME7AuOVnXR59Tzz6eaAjJjBOwDgB4wSMEzBOwDgB43bfcVbvifU9b8QExgkYJ2CcgHECxgkYJ2DccAca7mmL96jZ/wuPvufNvl8TGCdgnIBxAsYJGCdgnIBx2+z3uLN/b5u1+v2awDgB4wSMEzBOwDgB4wSMc15onAmMEzBOwDgB4wSMEzBOwLjpPXDvc17+OxMYJ2CcgHECxgkYJ2CcgHECxgkYJ2CcgHECxgkYJ2CcgHHT58SwlnNiTk7AOAHjBIwTME7AOAHj/gCtTTnhibVT8QAAAABJRU5ErkJggg==" alt="" class="mac-version-badge-icon">VERSION MAC</a>
       <div class="settings-dropdown hidden" id="settingsDropdown">
         <button class="ghost-btn" id="editorToggle">✎ GERER</button>
         <button class="ghost-btn playing" id="sfxToggle">🔊 SONS</button>
@@ -3334,6 +3440,38 @@
 
 <script>
   let sfxEnabled = true;
+
+  // ---------- Séquence d'intro (logo, avertissement, dédicace) ----------
+  (function runIntroSequence(){
+    const introSequence = document.getElementById('introSequence');
+    if (!introSequence) return;
+    const introSlides = [
+      document.getElementById('introSlide1'),
+      document.getElementById('introSlide2'),
+      document.getElementById('introSlide3')
+    ].filter(Boolean);
+    let introIndex = 0;
+    let introTimer = null;
+
+    function showIntroSlide(i){
+      introSlides.forEach((s, idx) => s.classList.toggle('active', idx === i));
+    }
+
+    function advanceIntro(){
+      clearTimeout(introTimer);
+      introIndex++;
+      if (introIndex >= introSlides.length){
+        introSequence.classList.add('hidden');
+        introSequence.removeEventListener('click', advanceIntro);
+        return;
+      }
+      showIntroSlide(introIndex);
+      introTimer = setTimeout(advanceIntro, 10000);
+    }
+
+    introSequence.addEventListener('click', advanceIntro);
+    introTimer = setTimeout(advanceIntro, 10000);
+  })();
 
   (function powerOnTV(){
     const tv = document.getElementById('tvOverlay');
