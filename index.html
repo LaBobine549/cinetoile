@@ -2964,6 +2964,10 @@
           <span class="editor-mode-btn-title">🖼 PLANS</span>
           <span class="editor-mode-btn-sub">Films et plans</span>
         </button>
+        <button type="button" class="editor-mode-btn" data-target="editorSectionDuel">
+          <span class="editor-mode-btn-title">⚔️ DUEL</span>
+          <span class="editor-mode-btn-sub">Critiques du mode Duel</span>
+        </button>
         <button type="button" class="editor-mode-btn" data-target="editorSectionGeneral">
           <span class="editor-mode-btn-title">⚙ GENERAL</span>
           <span class="editor-mode-btn-sub">Règles, Générique, sauvegarde</span>
@@ -3067,6 +3071,54 @@
           <div class="custom-list">
             <h3>FILMS DEJA AJOUTES (<span id="plansPoolCount">0</span>)</h3>
             <div id="plansPoolList"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div id="editorSectionDuel" class="editor-section hidden">
+      <button type="button" class="ghost-btn editor-back-btn">← RETOUR</button>
+      <div class="editor-columns">
+
+        <div class="editor-column">
+          <h2>AJOUTER UNE CRITIQUE DUEL</h2>
+          <p class="hint">Même principe qu'en Classique, mais réservé au mode Duel — les deux joueurs verront la même critique en même temps.</p>
+
+          <form id="duelReviewForm">
+            <div class="field">
+              <label for="duelReviewInput">La critique</label>
+              <textarea id="duelReviewInput" rows="3" placeholder="Ex : Un homme refuse de vieillir et embête tout un village avec une potion magique."></textarea>
+            </div>
+
+            <div class="field">
+              <label for="duelAnswerField">Le titre du film (bonne réponse)</label>
+              <input type="text" id="duelAnswerField" placeholder="Ex : Astérix et Obélix : Mission Cléopâtre">
+            </div>
+
+            <div class="field">
+              <label for="duelAnswerYearField">Année de sortie (facultatif)</label>
+              <input type="text" id="duelAnswerYearField" placeholder="Ex : 2002" inputmode="numeric" maxlength="4">
+            </div>
+
+            <div class="field">
+              <label for="duelAliasesField">Autres réponses acceptées (facultatif, séparées par des virgules)</label>
+              <input type="text" id="duelAliasesField" placeholder="Ex : Mission Cléopâtre, Astérix Mission Cléopâtre">
+            </div>
+
+            <div class="editor-actions">
+              <button type="submit" class="primary-btn" id="duelSubmitBtn">AJOUTER</button>
+              <button type="button" class="ghost-btn hidden" id="duelCancelEditBtn">ANNULER</button>
+            </div>
+            <div class="editor-form-msg" id="duelFormMsg"></div>
+          </form>
+        </div>
+
+        <div class="editor-column">
+          <div class="custom-list">
+            <h3>CRITIQUES DUEL (<span id="duelQuestionsCount">0</span>)</h3>
+            <p class="hint">Il faut au moins 5 critiques pour qu'un duel (le meilleur en 5) puisse se lancer.</p>
+            <div id="duelQuestionsList"></div>
           </div>
         </div>
 
@@ -4287,6 +4339,16 @@
   const editorModeBtns = document.querySelectorAll('.editor-mode-btn');
   const editorSections = document.querySelectorAll('.editor-section');
   const editorBackBtns = document.querySelectorAll('.editor-back-btn');
+  const duelReviewForm = document.getElementById('duelReviewForm');
+  const duelReviewInput = document.getElementById('duelReviewInput');
+  const duelAnswerField = document.getElementById('duelAnswerField');
+  const duelAnswerYearField = document.getElementById('duelAnswerYearField');
+  const duelAliasesField = document.getElementById('duelAliasesField');
+  const duelSubmitBtn = document.getElementById('duelSubmitBtn');
+  const duelCancelEditBtn = document.getElementById('duelCancelEditBtn');
+  const duelFormMsg = document.getElementById('duelFormMsg');
+  const duelQuestionsList = document.getElementById('duelQuestionsList');
+  const duelQuestionsCount = document.getElementById('duelQuestionsCount');
   const plansSearchField = document.getElementById('plansSearchField');
   const plansSearchBtn = document.getElementById('plansSearchBtn');
   const plansSearchResults = document.getElementById('plansSearchResults');
@@ -4311,6 +4373,7 @@
     btn.addEventListener('click', () => {
       showEditorSection(btn.dataset.target);
       if (btn.dataset.target === 'editorSectionPlans') loadPlansPoolFromCloud();
+      if (btn.dataset.target === 'editorSectionDuel') loadDuelQuestionsFromCloud();
     });
   });
   editorBackBtns.forEach(btn => {
@@ -4747,6 +4810,128 @@
       // échec silencieux
     }
   }
+
+  // ---------- Mode Duel : critiques dédiées (admin) ----------
+  let duelQuestions = [];
+  let duelEditingId = null;
+
+  async function loadDuelQuestionsFromCloud(){
+    if (!firebaseReady) return;
+    try {
+      const snapshot = await withTimeout(db.collection('duelQuestions').get(), 10000);
+      duelQuestions = snapshot.docs.map(doc => Object.assign({ id: doc.id }, doc.data()));
+    } catch (err){
+      duelQuestions = [];
+    }
+    renderDuelQuestionsList();
+  }
+
+  function renderDuelQuestionsList(){
+    duelQuestionsCount.textContent = duelQuestions.length;
+    duelQuestionsList.innerHTML = '';
+    if (duelQuestions.length === 0){
+      duelQuestionsList.innerHTML = '<p class="empty-note">Aucune critique Duel pour l\'instant.</p>';
+      return;
+    }
+    duelQuestions.forEach(q => {
+      const row = document.createElement('div');
+      row.className = 'plans-pool-item';
+      const info = document.createElement('div');
+      info.className = 'plans-pool-info';
+      const title = document.createElement('p');
+      title.className = 'plans-pool-title';
+      title.textContent = q.answer;
+      const meta = document.createElement('p');
+      meta.className = 'plans-pool-year';
+      meta.textContent = q.review.length > 60 ? q.review.slice(0, 60) + '…' : q.review;
+      info.appendChild(title);
+      info.appendChild(meta);
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'ghost-btn';
+      editBtn.textContent = 'MODIF.';
+      editBtn.addEventListener('click', () => startEditDuelQuestion(q));
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'ghost-btn';
+      delBtn.textContent = 'SUPPR.';
+      delBtn.addEventListener('click', async () => {
+        if (!confirm(`Supprimer la critique Duel "${q.answer}" ?`)) return;
+        try { await db.collection('duelQuestions').doc(q.id).delete(); } catch (err){}
+        await loadDuelQuestionsFromCloud();
+      });
+      row.appendChild(info);
+      row.appendChild(editBtn);
+      row.appendChild(delBtn);
+      duelQuestionsList.appendChild(row);
+    });
+  }
+
+  function startEditDuelQuestion(q){
+    duelEditingId = q.id;
+    duelReviewInput.value = q.review;
+    duelAnswerField.value = q.answer;
+    duelAnswerYearField.value = q.year || '';
+    duelAliasesField.value = (q.aliases || []).join(', ');
+    duelSubmitBtn.textContent = 'ENREGISTRER';
+    duelCancelEditBtn.classList.remove('hidden');
+    duelReviewForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function resetDuelForm(){
+    duelEditingId = null;
+    duelReviewForm.reset();
+    duelSubmitBtn.textContent = 'AJOUTER';
+    duelCancelEditBtn.classList.add('hidden');
+  }
+
+  duelCancelEditBtn.addEventListener('click', resetDuelForm);
+
+  duelReviewForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const review = duelReviewInput.value.trim();
+    const answer = duelAnswerField.value.trim();
+    const year = duelAnswerYearField.value.trim();
+    const aliases = duelAliasesField.value.split(',').map(a => a.trim()).filter(Boolean);
+
+    if (!review || !answer){
+      duelFormMsg.textContent = 'La critique et la réponse sont obligatoires.';
+      duelFormMsg.className = 'editor-form-msg error';
+      return;
+    }
+    if (!firebaseReady){
+      duelFormMsg.textContent = 'Pas de connexion au serveur.';
+      duelFormMsg.className = 'editor-form-msg error';
+      return;
+    }
+
+    const payload = {
+      review, answer,
+      aliases,
+      year: year ? parseInt(year, 10) : null,
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      if (duelEditingId){
+        await db.collection('duelQuestions').doc(duelEditingId).set(payload);
+        duelFormMsg.textContent = 'Critique Duel modifiée !';
+      } else {
+        await db.collection('duelQuestions').add(payload);
+        duelFormMsg.textContent = 'Critique Duel ajoutée !';
+      }
+      duelFormMsg.className = 'editor-form-msg ok';
+      resetDuelForm();
+      await loadDuelQuestionsFromCloud();
+    } catch (err){
+      duelFormMsg.textContent = "Erreur : impossible d'enregistrer.";
+      duelFormMsg.className = 'editor-form-msg error';
+    }
+    setTimeout(() => {
+      duelFormMsg.textContent = '';
+      duelFormMsg.className = 'editor-form-msg';
+    }, 2500);
+  });
 
   async function loadLeaderboardFromCloud(highlight, filterLevel){
     if (!firebaseReady){
