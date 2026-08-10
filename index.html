@@ -675,6 +675,68 @@
     .generique-available-badge{ font-size: 0.48rem; padding: 5px 8px; }
   }
 
+  .update-available-badge{
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.55rem;
+    line-height: 1.4;
+    color: var(--bg-deep);
+    background: var(--green);
+    border: 2px solid var(--green);
+    border-radius: var(--radius);
+    padding: 6px 10px;
+    text-decoration: none;
+    white-space: normal;
+    max-width: 170px;
+    display: inline-block;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(57,255,136,.5);
+    animation: update-badge-pulse 1.6s ease-in-out infinite;
+  }
+  .update-available-badge:hover{
+    background: #6bffab;
+  }
+  @keyframes update-badge-pulse{
+    0%, 100%{ box-shadow: 0 0 8px rgba(57,255,136,.5); }
+    50%{ box-shadow: 0 0 16px rgba(57,255,136,.8); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .update-available-badge{ animation: none; }
+  }
+  @media (max-width: 480px){
+    .update-available-badge{ font-size: 0.48rem; padding: 5px 8px; }
+  }
+
+  .mac-version-badge{
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.55rem;
+    color: var(--cyan);
+    background: #140a28;
+    border: 2px solid var(--cyan);
+    border-radius: var(--radius);
+    padding: 6px 10px;
+    text-decoration: none;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    box-shadow: 0 0 6px rgba(0,240,255,.35);
+    transition: box-shadow .15s ease, background .15s ease;
+  }
+  .mac-version-badge:hover{
+    background: #1c1040;
+    box-shadow: 0 0 10px rgba(0,240,255,.6);
+  }
+  .mac-version-badge-icon{
+    width: 16px;
+    height: 16px;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+  @media (max-width: 480px){
+    .mac-version-badge{ font-size: 0.48rem; padding: 5px 8px; }
+  }
+
   /* Fait scintiller le bouton "GENERIQUE" du menu réglages quand une
      récompense est disponible, pour attirer l'oeil vers lui. */
   .generique-btn-glow{
@@ -2713,6 +2775,8 @@
     <div class="settings-menu-wrapper">
       <button class="settings-gear-btn" id="settingsGearBtn" aria-label="Ouvrir le menu réglages">⚙️</button>
       <button type="button" class="generique-available-badge hidden" id="generiqueAvailableBadge">GENERIQUE disponible</button>
+      <a href="#" target="_blank" rel="noopener" class="update-available-badge hidden" id="updateAvailableBadge">🔄 MISE A JOUR DISPONIBLE</a>
+      <a href="https://github.com/LaBobine549/Mac/releases/latest" target="_blank" rel="noopener" class="mac-version-badge" id="macVersionBadge"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHAAAABwCAYAAADG4PRLAAABh0lEQVR4nO3cMU7DQBBAUYxIB0Xuf0gK6FKEC0TZYrWxv3mvdWHLX1OMLO/2trPL9nl/dv32/fOqR3nocv16ev12/91e9CgPve95c+YJGCdgnIBxAsYJGCdgnIBxAsYJGCdgnIBxAsYJGCdgnIBxAsYJGCdgnIBxAsYJGCdgnIBxAsYJGCdgnIBxAsYJGCdg3MfqG4z+/2OOCYwTME7AOAHjBIwTME7AuOk98OjnvJydCYwTME7AOAHjBIwTME7AuOVnXR59Tzz6eaAjJjBOwDgB4wSMEzBOwDgB43bfcVbvifU9b8QExgkYJ2CcgHECxgkYJ2DccAca7mmL96jZ/wuPvufNvl8TGCdgnIBxAsYJGCdgnIBx2+z3uLN/b5u1+v2awDgB4wSMEzBOwDgB4wSMc15onAmMEzBOwDgB4wSMEzBOwLjpPXDvc17+OxMYJ2CcgHECxgkYJ2CcgHECxgkYJ2CcgHECxgkYJ2CcgHHT58SwlnNiTk7AOAHjBIwTME7AOAHj/gCtTTnhibVT8QAAAABJRU5ErkJggg==" alt="" class="mac-version-badge-icon">VERSION MAC</a>
       <div class="settings-dropdown hidden" id="settingsDropdown">
         <button class="ghost-btn" id="editorToggle">✎ GERER</button>
         <button class="ghost-btn playing" id="sfxToggle">🔊 SONS</button>
@@ -3047,6 +3111,23 @@
             </div>
             <button type="button" class="primary-btn" id="adminUnlockGeneriqueBtn">TOUT RENDRE DISPONIBLE</button>
             <div class="editor-form-msg" id="adminGeneriqueMsg"></div>
+          </div>
+        </div>
+
+        <div class="editor-column">
+          <div class="custom-list">
+            <h3>APP BUREAU — MISE A JOUR</h3>
+            <p class="hint">Affiche un bandeau "mise à jour disponible" aux joueurs qui utilisent l'application de bureau (Mac/PC), avec un lien vers le nouveau fichier.</p>
+            <div class="field">
+              <label for="appVersionField">Numéro de version (ex : 1.0.1)</label>
+              <input type="text" id="appVersionField" placeholder="1.0.1">
+            </div>
+            <div class="field">
+              <label for="appDownloadUrlField">Lien de téléchargement du nouveau fichier</label>
+              <input type="text" id="appDownloadUrlField" placeholder="https://...">
+            </div>
+            <button type="button" class="primary-btn" id="saveAppVersionBtn">PUBLIER CETTE VERSION</button>
+            <div class="editor-form-msg" id="appVersionMsg"></div>
           </div>
         </div>
 
@@ -4341,6 +4422,7 @@
   const viewGeneriqueBtn = document.getElementById('viewGeneriqueBtn');
   const generiqueAlertDot = document.getElementById('generiqueAlertDot');
   const generiqueAvailableBadge = document.getElementById('generiqueAvailableBadge');
+  const updateAvailableBadge = document.getElementById('updateAvailableBadge');
   const generiquePanel = document.getElementById('generiquePanel');
   const generiqueLevelSummary = document.getElementById('generiqueLevelSummary');
   const generiquePathWrap = document.getElementById('generiquePathWrap');
@@ -4427,6 +4509,43 @@
   // ---------- Connexion à TMDb (The Movie Database) pour les points communs ----------
   // Colle ici ta clé API (v3 auth) récupérée dans les paramètres de ton compte TMDb.
   const TMDB_API_KEY = "0bbbced2ffc04460b113959a8bb46fe4";
+
+  // ---------- Mise à jour de l'application de bureau (Tauri) ----------
+  // Numéro de la version compilée dans CE build précis — à augmenter à la
+  // main à chaque fois qu'on recompile une nouvelle version de l'app avec
+  // "npx tauri build". Sans effet sur le site web (toujours à jour par
+  // nature), le bandeau ne s'affiche que dans l'app de bureau.
+  const APP_VERSION = '1.0.0';
+  const isDesktopApp = !!(window.__TAURI__ || window.__TAURI_INTERNALS__);
+  if (isDesktopApp){
+    document.getElementById('macVersionBadge').classList.add('hidden');
+  }
+
+  function isNewerVersion(latest, current){
+    const a = String(latest).split('.').map(Number);
+    const b = String(current).split('.').map(Number);
+    for (let i = 0; i < Math.max(a.length, b.length); i++){
+      const x = a[i] || 0, y = b[i] || 0;
+      if (x > y) return true;
+      if (x < y) return false;
+    }
+    return false;
+  }
+
+  async function checkForAppUpdate(){
+    if (!isDesktopApp || !firebaseReady) return;
+    try {
+      const doc = await withTimeout(db.collection('config').doc('appVersion').get(), 8000);
+      if (!doc.exists) return;
+      const data = doc.data();
+      if (data.version && data.downloadUrl && isNewerVersion(data.version, APP_VERSION)){
+        updateAvailableBadge.href = data.downloadUrl;
+        updateAvailableBadge.classList.remove('hidden');
+      }
+    } catch (err){
+      // échec silencieux : pas de bandeau si on n'a pas pu vérifier, sans planter le jeu
+    }
+  }
 
   let genreMap = {};
   let tmdbReady = false;
@@ -4771,6 +4890,7 @@
     await loadPlayerXPFromCloud(name);
     applyGenreDecor();
     updateGeneriqueAlert();
+    checkForAppUpdate();
 
     const session = loadGameSession(name);
     const hasProgress = session && session.historyByKey && Object.keys(session.historyByKey).length > 0;
@@ -6478,6 +6598,38 @@
     setTimeout(() => {
       adminGeneriqueMsg.textContent = '';
       adminGeneriqueMsg.className = 'editor-form-msg';
+    }, 4000);
+  });
+
+  const appVersionField = document.getElementById('appVersionField');
+  const appDownloadUrlField = document.getElementById('appDownloadUrlField');
+  const saveAppVersionBtn = document.getElementById('saveAppVersionBtn');
+  const appVersionMsg = document.getElementById('appVersionMsg');
+
+  saveAppVersionBtn.addEventListener('click', async () => {
+    const version = appVersionField.value.trim();
+    const downloadUrl = appDownloadUrlField.value.trim();
+    if (!version || !downloadUrl){
+      appVersionMsg.textContent = 'Indique un numéro de version et un lien.';
+      appVersionMsg.className = 'editor-form-msg error';
+      return;
+    }
+    if (!firebaseReady){
+      appVersionMsg.textContent = 'Pas de connexion au serveur.';
+      appVersionMsg.className = 'editor-form-msg error';
+      return;
+    }
+    try {
+      await db.collection('config').doc('appVersion').set({ version, downloadUrl });
+      appVersionMsg.textContent = `Version ${version} publiée — le bandeau apparaîtra aux joueurs de l'app de bureau.`;
+      appVersionMsg.className = 'editor-form-msg ok';
+    } catch (err){
+      appVersionMsg.textContent = "Erreur : impossible d'enregistrer.";
+      appVersionMsg.className = 'editor-form-msg error';
+    }
+    setTimeout(() => {
+      appVersionMsg.textContent = '';
+      appVersionMsg.className = 'editor-form-msg';
     }, 4000);
   });
 
