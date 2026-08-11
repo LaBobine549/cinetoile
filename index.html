@@ -7667,6 +7667,7 @@
       showDuelCard(duelWaitingCard);
       listenToDuelRoom(code);
     } catch (err){
+      console.error('[duel] erreur reelle lors de la creation de la salle:', err);
       duelEntryMsg.textContent = "Erreur : impossible de créer la salle.";
       duelEntryMsg.className = 'editor-form-msg error';
     }
